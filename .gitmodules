@@ -1,0 +1,3 @@
+[submodule "handy"]
+	path = handy
+	url = https://github.com/devnu11/handy.git

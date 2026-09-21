@@ -1,0 +1,40 @@
+
+[user]
+    email = git@forevans.com
+    name = Dave Evans
+
+[pull]
+	rebase = true
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	interactive = auto
+	ui = true
+	pager = true
+[alias]
+	l1 = log --oneline --decorate
+	l1nt = log --oneline --decorate -n 10
+	pr = pull --rebase
+	ri = rebase -i
+	ria = rebase -i --autosquash
+	fix = commit --fixup
+	cane = commit --amend --no-edit
+	caane = commit -a --amend --no-edit
+	bvv = branch -vv
+	review = !"git push origin HEAD:refs/for/$1"
+	reviewtag = '!git push origin $2:refs/for/$1'
+	cleanall = clean -xd
+	sun = status --untracked-files=no
+	s = status
+	sl = !git status && git l1nt
+	unstage = reset HEAD --
+	com = commit
+	debug = !GIT_TRACE=1 git
+	la = "!git config -l | grep alias | cut -c 7-"
+	remotebranch = '!(git status -sb | head -1 | sed "s~.*/\\([a-z0-9]*\\).*~\\1~")'
+	gerrit-invite = "!sh -c \"ssh -p `git gerrit-port` `git gerrit-host` 'gerrit set-reviewers --add' $1 `git log | grep Change-Id | head -1 | tr -d ' ' | cut -d':' -f2`\""
+	
+[includeIf "gitdir/i:C:/"]
+    path = .gitconfig.windows
+
