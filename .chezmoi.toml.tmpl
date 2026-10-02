@@ -1,0 +1,14 @@
+{{/* Prompts run once, on `chezmoi init`. Answers land in ~/.config/chezmoi/chezmoi.toml
+     (or %USERPROFILE%\.config\chezmoi\chezmoi.toml on Windows), which is NOT in this repo. */}}
+{{- $name  := promptStringOnce . "name"  "Full name for git commits" -}}
+{{- $email := promptStringOnce . "email" "Email address for git commits" -}}
+{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "work") -}}
+
+# Where this repo is checked out on this machine. Captured at `chezmoi init
+# --source=<path>` time so later commands find it without the flag.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+
+[data]
+    name = {{ $name | quote }}
+    email = {{ $email | quote }}
+    profile = {{ $profile | quote }}

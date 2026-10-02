@@ -1,0 +1,40 @@
+{{ if eq .chezmoi.os "windows" -}}
+# Link skills from the claude-skills external into ~\.claude\skills.
+# Junctions, not symlinks: junctions need no Developer Mode or admin rights.
+# Mirrors what the repo's install.sh does on Unix.
+
+$repo = Join-Path '{{ .chezmoi.homeDir }}' 'code\claude-skills'
+$dest = Join-Path '{{ .chezmoi.homeDir }}' '.claude\skills'
+
+if (-not (Test-Path $repo)) { exit 0 }
+if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
+
+$linked = @{}
+foreach ($skill in Get-ChildItem -Path $repo -Directory) {
+    if (-not (Test-Path (Join-Path $skill.FullName 'SKILL.md'))) { continue }
+    $linked[$skill.Name] = $true
+    $target = Join-Path $dest $skill.Name
+    $existing = Get-Item $target -ErrorAction SilentlyContinue
+
+    if ($existing -and $existing.LinkType -eq 'Junction') {
+        if ($existing.Target -contains $skill.FullName) { Write-Host "ok       $($skill.Name)"; continue }
+        Remove-Item $target -Force
+        Write-Host "relink   $($skill.Name)"
+    } elseif ($existing) {
+        Write-Warning "SKIP     $($skill.Name) (exists and is not a junction)"
+        continue
+    } else {
+        Write-Host "link     $($skill.Name)"
+    }
+    New-Item -ItemType Junction -Path $target -Target $skill.FullName | Out-Null
+}
+
+# Prune junctions pointing into the repo whose skill is gone.
+foreach ($item in Get-ChildItem -Path $dest -Directory -Force) {
+    if ($item.LinkType -ne 'Junction') { continue }
+    if (-not ($item.Target -like "$repo*")) { continue }
+    if ($linked.ContainsKey($item.Name)) { continue }
+    Write-Host "prune    $($item.Name)"
+    Remove-Item $item.FullName -Force
+}
+{{ end -}}

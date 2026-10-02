@@ -1,0 +1,5 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.bash_profile`
+# Login bash reads this instead of ~/.bashrc.
+
+[ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
+[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"

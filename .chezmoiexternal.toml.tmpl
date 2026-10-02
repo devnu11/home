@@ -1,0 +1,16 @@
+# Repos cloned into place by chezmoi, rather than tracked as submodules here.
+# Keeping them external means each one stays independently useful to someone
+# who only wants that repo, and chezmoi clones them verbatim — a submodule in
+# the source directory would have its filenames reinterpreted (dot_, private_,
+# run_ prefixes), which would mangle a repo not written for chezmoi.
+
+# Personal Claude Code skills. Cloned here rather than straight into
+# ~/.claude/skills because that directory already holds Anthropic's `synced`
+# bucket, and `git clone` refuses a non-empty destination.
+# run_after_link-claude-skills symlinks each skill into ~/.claude/skills/.
+["code/claude-skills"]
+	type = "git-repo"
+	url = "https://github.com/devnu11/claude-skills.git"
+	refreshPeriod = "168h"
+	["code/claude-skills".pull]
+		args = ["--ff-only"]

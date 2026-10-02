@@ -1,0 +1,49 @@
+# Environment for ALL shells, interactive or not.
+# Sourced from ~/.zshenv, ~/.zprofile and ~/.bashrc / ~/.bash_profile.
+# Managed by chezmoi. Keep this cheap: it runs for every script and cron job.
+#
+# Interactive-only things (aliases, history, prompt) belong in interactive.sh.
+
+# --- PATH ---------------------------------------------------------------
+# Remove-then-prepend, so the order is right even after macOS /usr/libexec/
+# path_helper has reshuffled PATH, and entries never accumulate in nested
+# shells. ~/.local/bin is where `uv tool install` puts entry points (handy).
+_path_prepend() {
+	[ -d "$1" ] || return 0
+	case ":$PATH:" in
+		*":$1:"*)
+			PATH=":$PATH:"
+			PATH="${PATH%%":$1:"*}:${PATH#*":$1:"}"
+			PATH="${PATH#:}"
+			PATH="${PATH%:}"
+			;;
+	esac
+	PATH="$1:$PATH"
+}
+_path_prepend "$HOME/bin"
+_path_prepend "$HOME/.local/bin"
+unset -f _path_prepend
+export PATH
+
+# --- Editor / pager -----------------------------------------------------
+if command -v nvim >/dev/null 2>&1; then
+	EDITOR=nvim
+elif command -v vim >/dev/null 2>&1; then
+	EDITOR=vim
+else
+	EDITOR=vi
+fi
+VISUAL="$EDITOR"
+export EDITOR VISUAL
+
+export PAGER=less
+# -R: pass through colour. -F: don't page output that fits on one screen.
+# (No -X: it leaves the last screenful stuck in the scrollback.)
+export LESS='-FR'
+
+# --- gpg ----------------------------------------------------------------
+# gpg needs a terminal to prompt for a passphrase, e.g. for signed commits.
+# Only meaningful when there is one; skip the subprocess otherwise.
+case "$-" in
+	*i*) GPG_TTY=$(tty 2>/dev/null) && export GPG_TTY ;;
+esac

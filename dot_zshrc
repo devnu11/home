@@ -1,0 +1,8 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.zshrc`
+# Interactive zsh only. Environment lives in ~/.zshenv -> ~/.shell/env.sh.
+
+[ -f "$HOME/.shell/interactive.sh" ] && . "$HOME/.shell/interactive.sh"
+
+# Machine-local additions (corporate proxies, PATH entries, work aliases).
+# Not tracked in the dotfiles repo.
+[ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"

@@ -1,0 +1,80 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.gitconfig`
+# Per-machine overrides go in ~/.gitconfig.local (included last, so it wins).
+
+[user]
+	name = {{ .name }}
+	email = {{ .email }}
+
+[pull]
+	rebase = true
+
+[core]
+{{- if eq .chezmoi.os "windows" }}
+	autocrlf = true
+{{- else }}
+	autocrlf = input
+{{- end }}
+
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+	interactive = auto
+	ui = true
+	pager = true
+
+[alias]
+	l1 = log --oneline --decorate
+	l1nt = log --oneline --decorate -n 10
+	pr = pull --rebase
+	ri = rebase -i
+	ria = rebase -i --autosquash
+	fix = commit --fixup
+	cane = commit --amend --no-edit
+	caane = commit -a --amend --no-edit
+	bvv = branch -vv
+	review = !"git push origin HEAD:refs/for/$1"
+	reviewtag = '!git push origin $2:refs/for/$1'
+	sun = status --untracked-files=no
+	s = status
+	sl = !git status && git l1nt
+	unstage = reset HEAD --
+	com = commit
+	debug = !GIT_TRACE=1 git
+	la = "!git config -l | grep alias | cut -c 7-"
+	remotebranch = '!(git status -sb | head -1 | sed "s~.*/\\([a-z0-9]*\\).*~\\1~")'
+	gerrit-invite = "!sh -c \"ssh -p `git gerrit-port` `git gerrit-host` 'gerrit set-reviewers --add' $1 `git log | grep Change-Id | head -1 | tr -d ' ' | cut -d':' -f2`\""
+	# `clean -xd` wipes ignored files too. Scoped to an explicit path so it can
+	# never be run against a whole home directory by accident.
+	cleanall = "!f() { test -n \"$1\" || { echo 'cleanall: pass a path' >&2; return 1; }; git clean -xd \"$@\"; }; f"
+
+{{ if eq .chezmoi.os "windows" -}}
+# --- Windows tool paths -------------------------------------------------
+# Chocolatey default install locations:
+#   choco install notepadplusplus beyondcompare
+# Chocolatey's shims (C:\ProgramData\chocolatey\bin) are on PATH, but shims for
+# GUI apps return immediately instead of waiting for the window to close, which
+# breaks git's editor/difftool/mergetool. So these point at the real .exe.
+# Note BComp.exe, not BCompare.exe: BComp.exe is the variant that blocks.
+# Override in ~/.gitconfig.local on a machine that installed these elsewhere.
+[core]
+	editor = 'C:/Program Files/Notepad++/notepad++.exe' -multiInst -notabbar -nosession -noPlugin
+[diff]
+	tool = bc4
+	guitool = bc4
+[difftool]
+	prompt = false
+[difftool "bc4"]
+	path = C:/Program Files/Beyond Compare 4/BComp.exe
+	cmd = \"C:/Program Files/Beyond Compare 4/BComp.exe\" \"$LOCAL\" \"$REMOTE\"
+[merge]
+	tool = bc4
+[mergetool "bc4"]
+	path = C:/Program Files/Beyond Compare 4/BComp.exe
+	cmd = \"C:/Program Files/Beyond Compare 4/BComp.exe\" \"$LOCAL\" \"$REMOTE\" \"$BASE\" \"$MERGED\"
+{{ end -}}
+
+# Last include wins: this is where corporate email, proxies, signing keys,
+# and machine-local tool paths belong. Never committed.
+[include]
+	path = ~/.gitconfig.local

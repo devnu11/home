@@ -1,0 +1,18 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.bashrc`
+
+# bash has no ~/.zshenv equivalent, so env.sh is sourced here too (it is
+# idempotent). BASH_ENV points here as well, which covers non-interactive
+# bash scripts and cron.
+[ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
+
+# Everything below is interactive-only.
+case "$-" in
+	*i*) ;;
+	*) return ;;
+esac
+
+[ -f "$HOME/.shell/interactive.sh" ] && . "$HOME/.shell/interactive.sh"
+
+# Machine-local additions (corporate proxies, PATH entries, work aliases).
+# Not tracked in the dotfiles repo.
+[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"

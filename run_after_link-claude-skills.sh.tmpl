@@ -1,0 +1,12 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+# Symlink skills from the claude-skills external into ~/.claude/skills.
+# Runs on every apply; cheap and idempotent. The repo's own install.sh does
+# the work, so the two stay in step and the repo remains usable without
+# chezmoi.
+
+REPO="{{ .chezmoi.homeDir }}/code/claude-skills"
+
+[ -x "$REPO/install.sh" ] || exit 0
+exec "$REPO/install.sh"
+{{ end -}}

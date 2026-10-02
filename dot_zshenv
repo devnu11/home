@@ -1,0 +1,6 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.zshenv`
+# Read by EVERY zsh — scripts, cron and ssh commands included.
+# This is what puts ~/.local/bin (handy) on PATH for non-interactive use.
+
+[ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
+[ -f "$HOME/.zshenv.local" ] && . "$HOME/.zshenv.local"

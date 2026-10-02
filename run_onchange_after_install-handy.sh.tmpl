@@ -1,0 +1,19 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+# Re-runs only when handy's entry points change.
+# pyproject.toml hash: {{ include "handy/pyproject.toml" | sha256sum }}
+
+HANDY="{{ .chezmoi.sourceDir }}/handy"
+
+command -v uv >/dev/null 2>&1 || {
+	echo "handy: uv not installed, skipping (see https://docs.astral.sh/uv/)" >&2
+	exit 0
+}
+[ -f "$HANDY/pyproject.toml" ] || {
+	echo "handy: submodule not checked out, skipping (git submodule update --init)" >&2
+	exit 0
+}
+
+echo "handy: installing entry points into ~/.local/bin"
+uv tool install --force --editable "$HANDY"
+{{ end -}}

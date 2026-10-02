@@ -1,0 +1,21 @@
+# Paths here are TARGET paths (relative to ~), not source filenames.
+# Anything listed is never created or updated in the home directory.
+
+# Repo furniture that lives in the source dir but is not a dotfile.
+README.md
+handy
+
+# Anthropic syncs this bucket from the account; it is machine state, not config.
+.claude/skills/synced
+
+{{ if ne .chezmoi.os "windows" }}
+# PowerShell profile is Windows-only.
+Documents
+{{ end }}
+
+{{ if eq .chezmoi.os "windows" }}
+# No zsh on Windows; Git Bash reads .bashrc.
+.zshrc
+.zprofile
+.zshenv
+{{ end }}
