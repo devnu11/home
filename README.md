@@ -173,3 +173,7 @@ approve a permission, so tracking it means constant drift and a real risk of
 seeded with it without that risk, add it as `create_private_dot_claude/…`:
 chezmoi's `create_` prefix writes the file only when it is absent and never
 touches it again.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

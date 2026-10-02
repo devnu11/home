@@ -3,6 +3,7 @@
 
 # Repo furniture that lives in the source dir but is not a dotfile.
 README.md
+LICENSE
 handy
 
 # Anthropic syncs this bucket from the account; it is machine state, not config.
