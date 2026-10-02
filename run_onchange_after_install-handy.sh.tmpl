@@ -3,6 +3,8 @@
 # Re-runs only when handy's entry points change.
 # pyproject.toml hash: {{ include "handy/pyproject.toml" | sha256sum }}
 
+# Note: uv installs into $HOME/.local/bin regardless of chezmoi's --destination,
+# so applying to an alternate destination still writes to the real home.
 HANDY="{{ .chezmoi.sourceDir }}/handy"
 
 command -v uv >/dev/null 2>&1 || {

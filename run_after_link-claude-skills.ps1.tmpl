@@ -3,8 +3,8 @@
 # Junctions, not symlinks: junctions need no Developer Mode or admin rights.
 # Mirrors what the repo's install.sh does on Unix.
 
-$repo = Join-Path '{{ .chezmoi.homeDir }}' 'code\claude-skills'
-$dest = Join-Path '{{ .chezmoi.homeDir }}' '.claude\skills'
+$repo = Join-Path '{{ .chezmoi.destDir }}' 'code\claude-skills'
+$dest = Join-Path '{{ .chezmoi.destDir }}' '.claude\skills'
 
 if (-not (Test-Path $repo)) { exit 0 }
 if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }

@@ -5,7 +5,12 @@
 # the work, so the two stay in step and the repo remains usable without
 # chezmoi.
 
-REPO="{{ .chezmoi.homeDir }}/code/claude-skills"
+REPO="{{ .chezmoi.destDir }}/code/claude-skills"
+
+# install.sh defaults to $HOME/.claude/skills; be explicit so that applying to
+# an alternate --destination links there instead of the real home.
+CLAUDE_SKILLS_DIR="{{ .chezmoi.destDir }}/.claude/skills"
+export CLAUDE_SKILLS_DIR
 
 [ -x "$REPO/install.sh" ] || exit 0
 exec "$REPO/install.sh"
