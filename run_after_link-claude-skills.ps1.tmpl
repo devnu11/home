@@ -3,38 +3,63 @@
 # Junctions, not symlinks: junctions need no Developer Mode or admin rights.
 # Mirrors what the repo's install.sh does on Unix.
 
-$repo = Join-Path '{{ .chezmoi.destDir }}' 'code\claude-skills'
-$dest = Join-Path '{{ .chezmoi.destDir }}' '.claude\skills'
+# Fail the apply on any error rather than exiting 0 with skills half-linked.
+$ErrorActionPreference = 'Stop'
+
+# chezmoi passes destDir with forward slashes (C:/Users/me); junction targets
+# come back with backslashes. GetFullPath normalises, so the two compare.
+# Quotes are doubled so a profile path like C:\Users\O'Brien stays one string.
+$repo = [IO.Path]::GetFullPath((Join-Path '{{ .chezmoi.destDir | replace "'" "''" }}' 'code\claude-skills'))
+$dest = [IO.Path]::GetFullPath((Join-Path '{{ .chezmoi.destDir | replace "'" "''" }}' '.claude\skills'))
 
 if (-not (Test-Path $repo)) { exit 0 }
 if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
 
-$linked = @{}
-foreach ($skill in Get-ChildItem -Path $repo -Directory) {
-    if (-not (Test-Path (Join-Path $skill.FullName 'SKILL.md'))) { continue }
-    $linked[$skill.Name] = $true
-    $target = Join-Path $dest $skill.Name
-    $existing = Get-Item $target -ErrorAction SilentlyContinue
+# Remove a junction without touching what it points at. Windows PowerShell 5.1's
+# Remove-Item prompts on a junction to a non-empty directory; this never does.
+function Remove-Junction([string]$path) { [IO.Directory]::Delete($path, $false) }
 
-    if ($existing -and $existing.LinkType -eq 'Junction') {
-        if ($existing.Target -contains $skill.FullName) { Write-Host "ok       $($skill.Name)"; continue }
-        Remove-Item $target -Force
-        Write-Host "relink   $($skill.Name)"
-    } elseif ($existing) {
-        Write-Warning "SKIP     $($skill.Name) (exists and is not a junction)"
-        continue
-    } else {
-        Write-Host "link     $($skill.Name)"
+# Skill directories in the repo: those holding a SKILL.md.
+function Get-Skill {
+    Get-ChildItem -Path $repo -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
+}
+
+# How the entry at $target relates to $skill: Missing, Current (a junction to
+# it), Stale (a junction elsewhere) or Blocked (anything else).
+function Get-LinkState([IO.DirectoryInfo]$skill, [string]$target) {
+    $existing = Get-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue
+    if (-not $existing) { return 'Missing' }
+    if ($existing.LinkType -ne 'Junction') { return 'Blocked' }
+    if ($existing.Target -contains $skill.FullName) { return 'Current' }
+    return 'Stale'
+}
+
+function Sync-Skill([IO.DirectoryInfo]$skill) {
+    $target = Join-Path $dest $skill.Name
+    switch (Get-LinkState $skill $target) {
+        'Current' { Write-Host "ok       $($skill.Name)"; return }
+        'Blocked' { Write-Warning "SKIP     $($skill.Name) (exists and is not a junction)"; return }
+        'Stale'   { Remove-Junction $target; Write-Host "relink   $($skill.Name)" }
+        'Missing' { Write-Host "link     $($skill.Name)" }
     }
     New-Item -ItemType Junction -Path $target -Target $skill.FullName | Out-Null
 }
 
-# Prune junctions pointing into the repo whose skill is gone.
-foreach ($item in Get-ChildItem -Path $dest -Directory -Force) {
-    if ($item.LinkType -ne 'Junction') { continue }
-    if (-not ($item.Target -like "$repo*")) { continue }
-    if ($linked.ContainsKey($item.Name)) { continue }
-    Write-Host "prune    $($item.Name)"
-    Remove-Item $item.FullName -Force
+# A junction into the repo whose skill is not in $names.
+function Test-Orphan([IO.DirectoryInfo]$item, [string[]]$names) {
+    if ($item.LinkType -ne 'Junction' -or $names -contains $item.Name) { return $false }
+    return [bool](@($item.Target) | Where-Object { $_ -and $_.StartsWith("$repo\", 'OrdinalIgnoreCase') })
 }
+
+function Remove-Orphan([string[]]$names) {
+    foreach ($item in Get-ChildItem -Path $dest -Directory -Force) {
+        if (-not (Test-Orphan $item $names)) { continue }
+        Write-Host "prune    $($item.Name)"
+        Remove-Junction $item.FullName
+    }
+}
+
+$skills = @(Get-Skill)
+foreach ($skill in $skills) { Sync-Skill $skill }
+Remove-Orphan @($skills | ForEach-Object { $_.Name })
 {{ end -}}
