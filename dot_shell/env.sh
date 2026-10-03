@@ -26,7 +26,10 @@ unset -f _path_prepend
 export PATH
 
 # --- Editor / pager -----------------------------------------------------
-if command -v nvim >/dev/null 2>&1; then
+# A simple editor first: nothing here should need a vi/emacs opinion.
+if command -v nano >/dev/null 2>&1; then
+	EDITOR=nano
+elif command -v nvim >/dev/null 2>&1; then
 	EDITOR=nvim
 elif command -v vim >/dev/null 2>&1; then
 	EDITOR=vim

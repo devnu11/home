@@ -57,13 +57,23 @@ because `handy jira-report` is meant to run from cron.
 
 So environment lives in `env.sh`, sourced from `~/.zshenv` (every zsh) and from
 both bash rc files: `PATH` (prepends `~/bin` and `~/.local/bin`), `EDITOR`/
-`VISUAL` (nvim, else vim, else vi), `PAGER`/`LESS`, and `GPG_TTY` for signed
+`VISUAL` (nano, else nvim, vim, vi), `PAGER`/`LESS`, and `GPG_TTY` for signed
 commits. Aliases, history and other interactive-only settings live in
 `interactive.sh`.
 
 `env.sh` removes a PATH entry before prepending it, so order survives macOS
 `/usr/libexec/path_helper` (which reshuffles PATH in `/etc/zprofile`, after
 `~/.zshenv` has run) and entries never pile up in nested shells.
+
+### Server watchdog
+
+`interactive.sh` ends with a hook that runs `handy servers start --quiet` in the
+background, so each new terminal restarts anything in `~/.config/handy/servers`
+that has died (see handy's README, "Servers on hosts you can't run services
+on"). It does nothing on machines without handy or that config, never delays the
+prompt, skips even starting Python if it ran in the last 10 minutes and the
+config hasn't changed since, and logs to `~/.local/state/handy-servers/hook.log`.
+`HANDY_SERVERS_DISABLE=1` turns it off.
 
 ## Per-machine and corporate overrides
 
