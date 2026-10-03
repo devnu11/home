@@ -146,7 +146,7 @@ and it prunes links to skills that have been deleted.
 ## handy
 
 `handy/` is a git submodule of a separate Python CLI. `chezmoi apply` installs
-its entry points into `~/.local/bin` (which `common.sh` puts on PATH) so
+its entry points into `~/.local/bin` (which `env.sh` puts on PATH) so
 `handy` is runnable from anywhere:
 
 ```sh
@@ -183,6 +183,28 @@ approve a permission, so tracking it means constant drift and a real risk of
 seeded with it without that risk, add it as `create_private_dot_claude/…`:
 chezmoi's `create_` prefix writes the file only when it is absent and never
 touches it again.
+
+## Tests
+
+`tests/` holds end-to-end checks that bootstrap this repo into a scratch home
+and inspect the result. Neither touches your real home directory.
+
+```sh
+sh tests/apply_test.sh                 # Linux / macOS
+pwsh -File tests/apply_test.ps1        # Windows
+```
+
+Both run `chezmoi init` with canned answers, then `apply`, and check the files
+that land, the gitconfig values, the claude-skills links (symlinks on Unix,
+junctions on Windows), that `handy` is runnable when `uv` is installed, and that
+a second `apply` changes nothing. The Unix test also starts bash and zsh as
+plain, login and interactive shells and checks `~/.local/bin` heads PATH. The
+Windows test additionally drives the junction script through adding, removing
+and relinking a skill, and loads the PowerShell profile.
+
+They need chezmoi, git, the `handy` submodule, and network access to clone
+claude-skills. CI runs them on Ubuntu, macOS and Windows for every push and pull
+request.
 
 ## License
 
