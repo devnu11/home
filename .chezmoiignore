@@ -5,6 +5,7 @@
 README.md
 LICENSE
 handy
+tests
 
 # Anthropic syncs this bucket from the account; it is machine state, not config.
 .claude/skills/synced
