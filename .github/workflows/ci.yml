@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A new push supersedes the run for the previous one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Pinned so an upstream release can't break CI unannounced. Bump deliberately.
+env:
+  CHEZMOI_VERSION: v2.73.0
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck -s sh tests/*.sh
+
+  # Bootstrap into a scratch home and check the result; see tests/apply_test.sh.
+  apply-unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: astral-sh/setup-uv@v6
+      - name: Install chezmoi
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$RUNNER_TEMP/bin" -t "$CHEZMOI_VERSION"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Install zsh
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -q && sudo apt-get install -y -q zsh
+      - name: apply test
+        run: sh tests/apply_test.sh
+
+  # Includes the junction logic in run_after_link-claude-skills.ps1.tmpl.
+  apply-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: astral-sh/setup-uv@v6
+      - name: Install chezmoi
+        shell: pwsh
+        run: |
+          $bin = Join-Path $env:RUNNER_TEMP 'bin'
+          iex "&{$(irm 'https://get.chezmoi.io/ps1')} -b '$bin' -t '$env:CHEZMOI_VERSION'"
+          Add-Content -Path $env:GITHUB_PATH -Value $bin
+      - name: apply test
+        shell: pwsh
+        run: ./tests/apply_test.ps1
