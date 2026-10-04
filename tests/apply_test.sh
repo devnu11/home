@@ -75,7 +75,7 @@ have() {
 
 # --- expectations -------------------------------------------------------
 
-MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .bashrc .bash_profile
+MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/lamaison.sh .bashrc .bash_profile
 .zshenv .zprofile .zshrc .claude/CLAUDE.md'
 
 # Source-dir furniture and Windows-only files stay out of ~.
@@ -94,6 +94,12 @@ bootstrap() {
 	chez init \
 		--promptString 'Full name for git commits=CI Test' \
 		--promptString 'Email address for git commits=ci@example.com' \
+		--promptString "Your username (shown as 'me' in the prompt)=ci" \
+		--promptString "Usual machine, shown grey in the prompt=ci-host" \
+		--promptString "Host for a bare \`ssh\` (blank for none)=" \
+		--promptString "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)=" \
+		--promptString "Directory shown blue in the prompt (blank for none)=" \
+		--promptString "Directory shown cyan in the prompt (blank for none)=" \
 		--promptChoice 'Machine profile=personal' || fail "init: exit $?"
 	chez apply || fail "first apply: exit $?"
 }

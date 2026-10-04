@@ -39,7 +39,7 @@ $FakeEnv = [ordered]@{
     UV_PYTHON_BIN_DIR     = '.local\bin'
 }
 
-$Managed = '.gitconfig', '.shell\env.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
+$Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
            'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.
@@ -169,6 +169,12 @@ function Test-Bootstrap {
     Invoke-Chezmoi init `
         --promptString 'Full name for git commits=CI Test' `
         --promptString 'Email address for git commits=ci@example.com' `
+        --promptString "Your username (shown as 'me' in the prompt)=ci" `
+        --promptString "Usual machine, shown grey in the prompt=ci-host" `
+        --promptString "Host for a bare ``ssh`` (blank for none)=" `
+        --promptString "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)=" `
+        --promptString "Directory shown blue in the prompt (blank for none)=" `
+        --promptString "Directory shown cyan in the prompt (blank for none)=" `
         --promptChoice 'Machine profile=personal' | Out-Null
     Invoke-Chezmoi apply | Out-Null
 }
