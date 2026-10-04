@@ -32,6 +32,8 @@ if (Get-Command less -CommandType Application -ErrorAction Ignore) {
 if (Get-Module PSReadLine) {
     Set-PSReadLineOption -MaximumHistoryCount 50000 -HistoryNoDuplicates
     Set-PSReadLineOption -AddToHistoryHandler { param($line) -not $line.StartsWith(' ') }
+    # Suggest from history as you type; PSReadLine 2.0 (Windows PowerShell 5.1) lacks it.
+    try { Set-PSReadLineOption -PredictionSource History } catch { }
 }
 
 # --- Aliases ------------------------------------------------------------
@@ -59,6 +61,13 @@ function {{ $name }} { {{ $command }} @args }
 # --- Functions ----------------------------------------------------------
 # One PATH entry per line.
 function path { $env:PATH -split ';' }
+
+# Where a command comes from (every match, like `which -a`).
+function which([string]$name) { Get-Command $name -All | Select-Object -ExpandProperty Source }
+
+# Listings sorted by modification time and by size, like `ls -ltr` / `ls -lSr`.
+function lt { Get-ChildItem @args | Sort-Object LastWriteTime }
+function lk { Get-ChildItem @args | Sort-Object Length }
 
 # Go up $count directories (up 3 == cd ../../..).
 function up([int]$count = 1) {
