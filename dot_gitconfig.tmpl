@@ -24,24 +24,61 @@
 	pager = true
 
 [alias]
-	l1 = log --oneline --decorate
-	l1nt = log --oneline --decorate -n 10
+	# List aliases
+	la = "!git config -l | grep alias | cut -c 7-"
+
+	# Log
+	l1   = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' --decorate
+	lg   = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' --grep
+	lp   = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' -p
+	lf   = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' --name-status --graph
+	l1u  = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' 'HEAD..@{u}~'
+	l    = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' 'HEAD..@{u}~'
+	l1nt = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' -n 10
+	l1n1 = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' -n 1
+	lfnt = log --pretty='format:%C(yellow)%h %C(green)%<(20)%aN %C(blue)(%><(13)%cr) %C(reset)%s %C(red)%d%C(reset)' -n 10 --name-status --graph
+
+	# Push / Pull / rebase
 	pr = pull --rebase
-	ri = rebase -i
-	ria = rebase -i --autosquash
+	po = push origin
+	pod = push origin HEAD:refs/for/dev
+	pom = push origin HEAD:refs/for/main
+	review = !"git push origin HEAD:refs/for/$1"
+	reviewtag = '!git push origin $2:refs/for/$1'
+
+	ri = rebase -i --autosquash --rebase-merges
+	ria = rebase -i --autosquash --rebase-merges
+
+	# reset
+	r2u = reset '@{u}'
+
+	# Commit
 	fix = commit --fixup
 	cane = commit --amend --no-edit
 	caane = commit -a --amend --no-edit
+
+	# Pick
+	p = cherry-pick
+	pick = cherry-pick
+	pc = -c core.editor=true pick --continue
+
+	# diff
+	d = diff
+	du = diff @{u}
+	commit-diff = "!f() { git range-diff \"$1^..$1\" \"$2^..$2\" ; }; f"
+
+	# Branch
 	bvv = branch -vv
-	review = !"git push origin HEAD:refs/for/$1"
-	reviewtag = '!git push origin $2:refs/for/$1'
+
+	# status
 	sun = status --untracked-files=no
 	s = status
 	sl = !git status && git l1nt
+
+
 	unstage = reset HEAD --
 	com = commit
 	debug = !GIT_TRACE=1 git
-	la = "!git config -l | grep alias | cut -c 7-"
 	remotebranch = '!(git status -sb | head -1 | sed "s~.*/\\([a-z0-9]*\\).*~\\1~")'
 	gerrit-invite = "!sh -c \"ssh -p `git gerrit-port` `git gerrit-host` 'gerrit set-reviewers --add' $1 `git log | grep Change-Id | head -1 | tr -d ' ' | cut -d':' -f2`\""
 	# `clean -xd` wipes ignored files too. Scoped to an explicit path so it can
