@@ -23,8 +23,18 @@ chezmoi apply
 this repo.
 
 Run `chezmoi diff` before the first `apply`. chezmoi only warns about
-overwriting a file once it has written that file at least one time — on a fresh
-machine it will replace a pre-existing `~/.gitconfig` silently.
+overwriting a file once it has written that file at least one time, so on a
+fresh machine it replaces a pre-existing `~/.gitconfig` without asking. Two
+things soften that:
+
+- The first apply copies every pre-existing dotfile listed in
+  [`.chezmoidata/existing.yaml`](.chezmoidata/existing.yaml) to
+  `~/.dotfiles-backup/<time>/` before writing anything.
+- A listed target that is a **symlink** (a team-shared `~/.bashrc`, say) is
+  never touched. `~/.bash_profile` then loads `~/.shell/bashrc.sh` itself, so
+  login shells (ssh, most terminals on macOS) still get the full setup.
+  Non-login interactive shells read only the shared `~/.bashrc` and get none
+  of it.
 
 ## Layout
 
@@ -36,8 +46,9 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `dot_zshenv` | `~/.zshenv` | Read by every zsh; sources `env.sh` |
 | `dot_zprofile` | `~/.zprofile` | Login zsh: re-sources `env.sh` after macOS `path_helper` |
 | `dot_zshrc` | `~/.zshrc` | Interactive zsh: `interactive.sh`, then `~/.zshrc.local` |
-| `dot_bash_profile` | `~/.bash_profile` | Login bash: `env.sh`, then `.bashrc` |
-| `dot_bashrc` | `~/.bashrc` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
+| `dot_bash_profile` | `~/.bash_profile` | Login bash: `env.sh`, then `.bashrc` (and `.shell/bashrc.sh` if `.bashrc` is shared) |
+| `dot_bashrc` | `~/.bashrc` | Sources `.shell/bashrc.sh` |
+| `dot_shell/bashrc.sh` | `~/.shell/bashrc.sh` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
 | `Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` | `$PROFILE` | Windows only; aliases, helpers and prompt, see below |
 | `Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1` | 5.1's `$PROFILE` | Loads the one above, so Windows PowerShell matches |
 | `dot_cmdrc.cmd.tmpl`, `private_dot_config/cmd/` | `~/.cmdrc.cmd`, `~/.config/cmd/` | Windows only; cmd.exe aliases and prompt |

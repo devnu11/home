@@ -29,3 +29,13 @@ AppData
 .zprofile
 .zshenv
 {{ end }}
+
+# A target that is a symlink is shared with someone or something else (a
+# team-wide ~/.bashrc, say). Replacing it would break them, so leave it be.
+# dot_bash_profile still loads our shell setup when ~/.bashrc is skipped.
+{{ range .existingTargets -}}
+{{   $info := lstat (joinPath $.chezmoi.destDir .) -}}
+{{   if and $info (eq $info.type "symlink") }}
+{{ . }}
+{{-  end }}
+{{ end -}}
