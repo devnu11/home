@@ -88,7 +88,7 @@
 {{ if eq .chezmoi.os "windows" -}}
 # --- Windows tool paths -------------------------------------------------
 # Chocolatey default install locations:
-#   choco install notepadplusplus  (Beyond Compare: .chezmoidata/packages.yaml)
+# Both are installed from .chezmoidata/packages.yaml.
 # Chocolatey's shims (C:\ProgramData\chocolatey\bin) are on PATH, but shims for
 # GUI apps return immediately instead of waiting for the window to close, which
 # breaks git's editor/difftool/mergetool. So these point at the real .exe.

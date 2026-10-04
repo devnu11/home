@@ -46,7 +46,7 @@ $Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.shell\bashrc.s
 $Unmanaged = '.zshrc', '.zprofile', '.zshenv', 'README.md', 'LICENSE', 'handy', 'tests', '.github'
 
 # What install-packages must pass to choco (from .chezmoidata/packages.yaml).
-$ChocoPackages = 'beyondcompare', 'unxutils'
+$ChocoPackages = 'beyondcompare', 'unxutils', 'notepadplusplus', 'uv', 'nodejs-lts', 'fzf', 'ripgrep'
 
 $GitValues = [ordered]@{
     'user.email'    = 'ci@example.com'

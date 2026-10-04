@@ -120,17 +120,15 @@ warning, not an error, and the script reruns once it appears. Removing a name
 does not uninstall anything.
 
 Chocolatey needs an elevated shell; from a normal one the install fails and the
-next apply retries. `HOME_PACKAGES=skip` turns the step off (the tests use it).
+next apply retries. apt runs through sudo; where sudo is denied it warns and
+skips until the list changes. `HOME_PACKAGES=skip` turns the step off (the
+tests use it).
 
 ## Windows tools
 
 The Windows branch of `dot_gitconfig.tmpl` points at Chocolatey's default
-install locations. Beyond Compare comes from the package list above; Notepad++
-does not (yet):
-
-```
-choco install notepadplusplus
-```
+install locations; Beyond Compare and Notepad++ both come from the package list
+above.
 
 It uses full paths rather than Chocolatey's PATH shims on purpose: shims for GUI
 applications return immediately instead of blocking, which breaks git's editor,
