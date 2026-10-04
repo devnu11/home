@@ -1,0 +1,13 @@
+# Targets a new machine is likely to have already. Before the first apply,
+# run_once_before_backup-dotfiles copies whichever exist to
+# ~/.dotfiles-backup/<time>/, and .chezmoiignore leaves any that are symlinks
+# alone (e.g. a team-shared ~/.bashrc), so chezmoi never replaces them.
+existingTargets:
+  - .bashrc
+  - .bash_profile
+  - .zshrc
+  - .zprofile
+  - .zshenv
+  - .gitconfig
+  - .claude/CLAUDE.md
+  - Documents/PowerShell/Microsoft.PowerShell_profile.ps1

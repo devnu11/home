@@ -39,7 +39,7 @@ $FakeEnv = [ordered]@{
     UV_PYTHON_BIN_DIR     = '.local\bin'
 }
 
-$Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
+$Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.shell\bashrc.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
            'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.
@@ -184,6 +184,20 @@ function Test-Bootstrap {
     Invoke-Chezmoi apply | Out-Null
 }
 
+# A work .gitconfig already in place; the first apply must back it up.
+$WorkGitconfig = "[user]`n`temail = me@work.example"
+
+function Initialize-ExistingDotfiles {
+    Set-Content -Path (Join-Path $FakeHome '.gitconfig') -Value $WorkGitconfig -NoNewline
+}
+
+function Test-Backup {
+    Section 'backup of existing dotfiles'
+    $copy = Get-ChildItem (Join-Path $FakeHome '.dotfiles-backup\*\.gitconfig') -ErrorAction SilentlyContinue
+    if (-not $copy) { Fail 'no backup of .gitconfig'; return }
+    Assert-Equal (Get-Content -Raw $copy.FullName) $WorkGitconfig
+}
+
 function Test-Targets {
     Section 'targets'
     foreach ($f in $Managed) { Assert-File $f }
@@ -282,7 +296,7 @@ function Test-PowerShellProfile {
 
 # --- main ---------------------------------------------------------------
 
-$Steps = 'Test-Bootstrap', 'Test-Targets', 'Test-Gitconfig', 'Test-SkillJunctions',
+$Steps = 'Initialize-ExistingDotfiles', 'Test-Bootstrap', 'Test-Backup', 'Test-Targets', 'Test-Gitconfig', 'Test-SkillJunctions',
          'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-Idempotent', 'Test-SkillJunctions',
          'Test-AddSkill', 'Test-PruneSkill', 'Test-Relink', 'Test-SkipRealDirectory'
 

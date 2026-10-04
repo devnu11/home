@@ -1,0 +1,18 @@
+{{ if eq .chezmoi.os "windows" -}}
+# Before the first apply on this machine, copy every dotfile chezmoi may
+# replace into ~\.dotfiles-backup\<time>\. run_once_: it never runs again.
+# Targets come from .chezmoidata/existing.yaml.
+
+$dest = '{{ .chezmoi.destDir }}'
+$backup = Join-Path $dest ".dotfiles-backup\$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+$targets = @({{ range $i, $t := .existingTargets }}{{ if $i }}, {{ end }}'{{ $t }}'{{ end }})
+
+foreach ($f in $targets) {
+    $source = Join-Path $dest $f
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { continue }
+    $copy = Join-Path $backup $f
+    New-Item -ItemType Directory -Force -Path (Split-Path $copy) | Out-Null
+    Copy-Item -LiteralPath $source -Destination $copy -ErrorAction Stop
+    Write-Host "backup: ~/$f -> $copy"
+}
+{{ end -}}

@@ -1,18 +1,5 @@
-# Managed by chezmoi. Edit the source: `chezmoi edit ~/.bashrc`
+# Managed by chezmoi. Edit the source: `chezmoi edit ~/.shell/bashrc.sh`
+# The setup itself lives in ~/.shell/bashrc.sh, so ~/.bash_profile can load it
+# on machines where ~/.bashrc is shared and not ours.
 
-# bash has no ~/.zshenv equivalent, so env.sh is sourced here too (it is
-# idempotent). BASH_ENV points here as well, which covers non-interactive
-# bash scripts and cron.
-[ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
-
-# Everything below is interactive-only.
-case "$-" in
-	*i*) ;;
-	*) return ;;
-esac
-
-[ -f "$HOME/.shell/interactive.sh" ] && . "$HOME/.shell/interactive.sh"
-
-# Machine-local additions (corporate proxies, PATH entries, work aliases).
-# Not tracked in the dotfiles repo.
-if [ -f "$HOME/.bashrc.local" ]; then . "$HOME/.bashrc.local"; fi
+if [ -f "$HOME/.shell/bashrc.sh" ]; then . "$HOME/.shell/bashrc.sh"; fi
