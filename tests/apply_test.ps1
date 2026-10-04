@@ -45,6 +45,9 @@ $Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.bashrc', '.bas
 # zsh files are Unix-only; source-dir furniture never lands in ~.
 $Unmanaged = '.zshrc', '.zprofile', '.zshenv', 'README.md', 'LICENSE', 'handy', 'tests', '.github'
 
+# What install-packages must pass to choco (from .chezmoidata/packages.yaml).
+$ChocoPackages = 'beyondcompare', 'unxutils'
+
 $GitValues = [ordered]@{
     'user.email'    = 'ci@example.com'
     'core.autocrlf' = 'true'
@@ -78,6 +81,7 @@ function Enter-FakeHome {
         $path = if ($relative) { Join-Path $FakeHome $relative } else { $FakeHome }
         [Environment]::SetEnvironmentVariable($name, $path)
     }
+    $env:HOME_PACKAGES = 'skip' # keep install-packages off the real machine
 }
 
 function Save-Environment {
@@ -88,6 +92,7 @@ function Save-Environment {
 
 function Restore-Environment([hashtable]$saved) {
     foreach ($name in $saved.Keys) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
+    Remove-Item Env:HOME_PACKAGES -ErrorAction SilentlyContinue
 }
 
 # Run chezmoi against this source with stdin empty, so an unanswered prompt
@@ -246,6 +251,18 @@ function Test-SkipRealDirectory {
     Remove-Item -Recurse -Force (Join-Path $Clone 'zz-ci-blocked'), $blocker
 }
 
+# install-packages must render as valid PowerShell that installs every package.
+function Test-Packages {
+    Section 'packages'
+    if (-not (Get-Command choco -ErrorAction SilentlyContinue)) { Write-Host '    skip: choco not installed'; return }
+    $template = Get-Content -Raw (Join-Path $Src 'run_onchange_after_install-packages.ps1.tmpl')
+    $script = Invoke-Chezmoi execute-template $template
+    $errors = $null
+    [System.Management.Automation.Language.Parser]::ParseInput($script, [ref]$null, [ref]$errors) | Out-Null
+    if ($errors) { Fail "install-packages does not parse: $errors" }
+    foreach ($pkg in $ChocoPackages) { if ($script -notmatch "'$pkg'") { Fail "install-packages does not install $pkg" } }
+}
+
 function Test-Handy {
     Section 'handy'
     if (-not (Get-Command uv -ErrorAction SilentlyContinue)) { Write-Host '    skip: uv not installed'; return }
@@ -266,7 +283,7 @@ function Test-PowerShellProfile {
 # --- main ---------------------------------------------------------------
 
 $Steps = 'Test-Bootstrap', 'Test-Targets', 'Test-Gitconfig', 'Test-SkillJunctions',
-         'Test-Handy', 'Test-PowerShellProfile', 'Test-Idempotent', 'Test-SkillJunctions',
+         'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-Idempotent', 'Test-SkillJunctions',
          'Test-AddSkill', 'Test-PruneSkill', 'Test-Relink', 'Test-SkipRealDirectory'
 
 $saved = Save-Environment

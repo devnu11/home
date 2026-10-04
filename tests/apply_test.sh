@@ -42,11 +42,12 @@ section() {
 # Run a command with HOME (and nothing else) pointing at the scratch home.
 in_home() {
 	# uv's own overrides beat HOME, so drop them too or a local run would
-	# overwrite the developer's real handy install.
+	# overwrite the developer's real handy install. HOME_PACKAGES=skip keeps
+	# install-packages off the real machine.
 	env -u XDG_CONFIG_HOME -u XDG_DATA_HOME -u XDG_STATE_HOME -u XDG_CACHE_HOME \
 		-u XDG_BIN_HOME -u UV_TOOL_DIR -u UV_TOOL_BIN_DIR \
 		-u UV_PYTHON_INSTALL_DIR -u UV_PYTHON_BIN_DIR \
-		-u BASH_ENV -u ENV HOME="$FAKE_HOME" "$@"
+		-u BASH_ENV -u ENV HOME="$FAKE_HOME" HOME_PACKAGES=skip "$@"
 }
 
 chez() {
@@ -140,6 +141,27 @@ check_skill_link() {
 	assert_eq "$(readlink "$link")" "$1"
 }
 
+# install-packages must render as valid sh that installs this OS's packages.
+check_packages() {
+	section "packages"
+	# chez closes stdin, so the template goes in as an argument.
+	script=$(chez execute-template "$(cat "$SRC/run_onchange_after_install-packages.sh.tmpl")") ||
+		{ fail "render: exit $?"; return; }
+	printf '%s' "$script" | grep -q HOME_PACKAGES || fail "install-packages rendered empty"
+	printf '%s\n' "$script" | sh -n || fail "install-packages is not valid sh"
+	for pkg in $(expected_packages); do
+		printf '%s' "$script" | grep -q "\"$pkg\"" || fail "install-packages does not install $pkg"
+	done
+}
+
+# Packages from .chezmoidata/packages.yaml this OS's script must name.
+# Empty where the package manager is missing: the script then only warns.
+expected_packages() {
+	case "$(uname -s)" in
+		Darwin) command -v brew >/dev/null 2>&1 && echo beyond-compare ;;
+	esac
+}
+
 check_handy() {
 	section "handy"
 	have uv || return 0
@@ -189,6 +211,7 @@ bootstrap
 check_targets
 check_gitconfig
 check_skill_links
+check_packages
 check_handy
 check_shell bash
 check_shell zsh

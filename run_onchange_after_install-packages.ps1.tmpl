@@ -1,0 +1,19 @@
+{{ if eq .chezmoi.os "windows" -}}
+# Install the packages listed in .chezmoidata/packages.yaml.
+# chezmoi reruns this whenever its rendered text changes: when the list
+# changes, or when choco first shows up on PATH (lookPath below).
+# HOME_PACKAGES=skip turns it off, for tests.
+
+if ($env:HOME_PACKAGES -eq 'skip') { exit 0 }
+{{ with .packages.choco -}}
+{{   if lookPath "choco" -}}
+choco install -y{{ range . }} '{{ . }}'{{ end }}
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'packages: choco failed; it needs an elevated shell. The next apply retries.'
+    exit $LASTEXITCODE
+}
+{{   else -}}
+Write-Host 'packages: choco not installed, skipping (see https://chocolatey.org/install)'
+{{   end -}}
+{{ end -}}
+{{ end -}}

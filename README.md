@@ -99,13 +99,26 @@ A work laptop typically needs only `~/.gitconfig.local`:
 Anything that varies per machine but is *not* secret can instead become a
 template variable in `.chezmoi.toml.tmpl` and a `{{ .var }}` in the file.
 
+## Packages
+
+`chezmoi apply` installs the packages listed in
+[`.chezmoidata/packages.yaml`](.chezmoidata/packages.yaml) with the OS's package
+manager: Chocolatey on Windows, Homebrew on macOS, apt on Debian/Ubuntu. Add a
+name to a list and the next apply installs it. A missing package manager is a
+warning, not an error, and the script reruns once it appears. Removing a name
+does not uninstall anything.
+
+Chocolatey needs an elevated shell; from a normal one the install fails and the
+next apply retries. `HOME_PACKAGES=skip` turns the step off (the tests use it).
+
 ## Windows tools
 
 The Windows branch of `dot_gitconfig.tmpl` points at Chocolatey's default
-install locations:
+install locations. Beyond Compare comes from the package list above; Notepad++
+does not (yet):
 
 ```
-choco install notepadplusplus beyondcompare
+choco install notepadplusplus
 ```
 
 It uses full paths rather than Chocolatey's PATH shims on purpose: shims for GUI
