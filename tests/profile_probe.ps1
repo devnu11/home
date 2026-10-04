@@ -22,6 +22,8 @@ Check 'gs is a function' { (Get-Command gs).CommandType -eq 'Function' }
 Check 'gc beats the built-in Get-Content alias' { (Get-Command gc).CommandType -eq 'Function' }
 Check 'h beats the built-in Get-History alias' { (Get-Command h).CommandType -eq 'Function' }
 Check '.. is a function' { (Get-Command ..).CommandType -eq 'Function' }
+Check 'which finds git' { (which git) -like '*git*' }
+Check 'lt sorts oldest first' { $items = @(lt $env:SystemRoot); $items[0].LastWriteTime -le $items[-1].LastWriteTime }
 Check 'rm is still the built-in' { (Get-Command rm).CommandType -eq 'Alias' }
 
 Check '.. goes up one directory' {

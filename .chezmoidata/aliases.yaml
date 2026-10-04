@@ -51,6 +51,7 @@ aliases:
   ll: {sh: ls -Fls, pwsh: Get-ChildItem, cmd: dir}
   la: {sh: ls -Alh, pwsh: Get-ChildItem -Force, cmd: dir /a}
   kk: ll
+  l: {pwsh: Get-ChildItem -Force}
 
   # --- files -----------------------------------------------------------
   c: {sh: cat, pwsh: Get-Content, cmd: type}
