@@ -1,5 +1,9 @@
 # Managed by chezmoi. Edit the source: `chezmoi edit ~/.bash_profile`
-# Login bash reads this instead of ~/.bashrc.
+# Login bash reads this instead of ~/.bashrc, and instead of ~/.profile.
+
+# Bash skips ~/.profile once this file exists, so read it here: work and
+# distro setups put PATH and proxies there. (Debian's also sources ~/.bashrc.)
+if [ -f "$HOME/.profile" ]; then . "$HOME/.profile"; fi
 
 [ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
 [ -n "${__HOME_BASHRC:-}" ] || { [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"; }
