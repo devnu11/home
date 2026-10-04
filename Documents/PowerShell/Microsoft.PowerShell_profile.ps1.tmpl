@@ -1,0 +1,127 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit $PROFILE`
+# Windows only — see .chezmoiignore. Mirrors ~/.shell/interactive.sh where
+# PowerShell has an equivalent.
+
+# --- PATH ---------------------------------------------------------------
+# Where `uv tool install` puts entry points, so `handy` is invocable.
+$localBin = Join-Path $HOME '.local\bin'
+if ((Test-Path $localBin) -and ($env:PATH -notlike "*$localBin*")) {
+    $env:PATH = "$localBin;$env:PATH"
+}
+
+# --- History ------------------------------------------------------------
+if (Get-Module -ListAvailable PSReadLine) {
+    Set-PSReadLineOption -MaximumHistoryCount 50000 -HistoryNoDuplicates
+    # Inline suggestions from history; older PSReadLine lacks the option.
+    try { Set-PSReadLineOption -PredictionSource History } catch { }
+}
+
+# --- Prompt -------------------------------------------------------------
+# Same layout as the bash/zsh prompt: status, [user@host:dir].
+$PromptDefaultUser = '{{ .lamaisonDefaultUsername }}'
+$PromptDefaultHost = '{{ .lamaisonDefaultHostname }}'.Split('.')[0]
+$Esc = [char]27
+
+function Format-Colour([string]$code, [string]$text) {
+    return "$Esc[${code}m$text$Esc[0m"
+}
+
+function Format-PromptStatus([bool]$ok, [int]$code) {
+    if ($ok) { return Format-Colour '0;32' '👍 000' }
+    return Format-Colour '0;31' ('😡 {0:D3}' -f $code)
+}
+
+function Format-PromptUser {
+    if ($env:USERNAME -eq $PromptDefaultUser) { return Format-Colour '1;30' 'me' }
+    return Format-Colour '0;35' $env:USERNAME
+}
+
+function Format-PromptHost {
+    $colour = if ($env:COMPUTERNAME -eq $PromptDefaultHost) { '1;30' } else { '0;31' }
+    return Format-Colour $colour "@$($env:COMPUTERNAME.ToLower())"
+}
+
+function Format-PromptDir {
+    $colour = if ($PWD.Path.StartsWith($HOME)) { '0;32' } else { '0;31' }
+    return (Format-Colour '1;30' ':') + (Format-Colour $colour (Split-Path -Leaf $PWD.Path))
+}
+
+function prompt {
+    $status = Format-PromptStatus $? $LASTEXITCODE
+    return "$status [$(Format-PromptUser)$(Format-PromptHost)$(Format-PromptDir)] "
+}
+
+# --- Aliases and helpers ------------------------------------------------
+Set-Alias -Name g -Value git
+Set-Alias -Name py -Value python
+Set-Alias -Name cls -Value Clear-Host -Option AllScope
+
+function ll { Get-ChildItem @args }
+function la { Get-ChildItem -Force @args }
+function l { Get-ChildItem -Force @args }
+function lt { Get-ChildItem @args | Sort-Object LastWriteTime }
+function lk { Get-ChildItem @args | Sort-Object Length }
+
+function .. { Set-Location .. }
+function ... { Set-Location ..\.. }
+function .... { Set-Location ..\..\.. }
+
+# Print PATH one entry per line.
+function path { $env:PATH -split ';' }
+
+# Create a directory and go into it.
+function mkcd([string]$dir) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    Set-Location $dir
+}
+Set-Alias -Name mcd -Value mkcd
+Set-Alias -Name mkdirg -Value mkcd
+
+# Go up $n directories.
+function up([int]$n = 1) {
+    Set-Location (('..\' * $n).TrimEnd('\'))
+}
+
+# Search history, processes, or file contents (bash: h, p, ftext).
+function h([string]$pattern) { Get-History | Where-Object CommandLine -Match $pattern }
+function p([string]$pattern) { Get-Process | Where-Object ProcessName -Match $pattern }
+function ftext([string]$pattern) { Get-ChildItem -Recurse -File | Select-String -Pattern $pattern }
+
+function which([string]$name) { Get-Command $name -All | Select-Object -ExpandProperty Source }
+
+# List subdirectories by total size, largest first.
+function lsd {
+    Get-ChildItem -Directory | ForEach-Object {
+        $bytes = (Get-ChildItem $_.FullName -Recurse -File -ErrorAction SilentlyContinue |
+                  Measure-Object -Property Length -Sum).Sum
+        [pscustomobject]@{ MB = [math]::Round($bytes / 1MB, 1); Name = $_.Name }
+    } | Sort-Object MB -Descending
+}
+
+# --- git ----------------------------------------------------------------
+# Same names as bash. gc, gl, gp and gcm shadow built-in aliases
+# (Get-Content, Get-Location, Get-ItemProperty, Get-Command); use the full
+# cmdlet names instead.
+foreach ($name in 'gc', 'gl', 'gp', 'gcm') {
+    Remove-Item "Alias:$name" -Force -ErrorAction SilentlyContinue
+}
+
+function gs    { git status @args }
+function gsl   { git sl @args }
+function gl    { git l @args }
+function ga    { git add @args }
+function gc    { git commit @args }
+function gcm   { git commit -m @args }
+function gca   { git commit -a @args }
+function gcam  { git commit -a -m @args }
+function gcadd { git commit --amend @args }
+function gd    { git diff @args }
+function gf    { git fetch @args }
+function gp    { git pick @args }
+function gri   { git ri @args }
+function gpr   { git pr @args }
+function grc   { git rebase --continue @args }
+
+# Machine-local additions. Not tracked in the dotfiles repo.
+$localProfile = Join-Path (Split-Path $PROFILE) 'local.ps1'
+if (Test-Path $localProfile) { . $localProfile }

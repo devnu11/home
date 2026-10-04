@@ -296,7 +296,10 @@ function Test-Handy {
 function Test-PowerShellProfile {
     Section 'PowerShell profile'
     $profilePath = Join-Path $FakeHome 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
-    $probe = ". '$profilePath'; if (-not (Get-Alias g -ErrorAction SilentlyContinue)) { exit 1 }"
+    $probe = ". '$profilePath'; " +
+             "foreach (`$c in 'g', 'gs', 'gc', 'mkcd', 'up', 'path') { if (-not (Get-Command `$c -ErrorAction SilentlyContinue)) { exit 1 } }; " +
+             "if (-not (prompt)) { exit 2 }; " +
+             "if ((Get-Command gc).CommandType -ne 'Function') { exit 3 }"
     & pwsh -NoProfile -NonInteractive -Command $probe
     if ($LASTEXITCODE -ne 0) { Fail "profile failed to load: exit $LASTEXITCODE" }
 }
