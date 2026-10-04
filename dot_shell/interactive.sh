@@ -129,8 +129,6 @@ PS2="${__P_OPEN}${COLOR_DARKGRAY}${__P_CLOSE}>${__P_OPEN}${COLOR_NOCOLOR}${__P_C
 # PS3 is used to enter a number choice in a script
 PS3='Please enter a number from above list: '
 
-alias cls="clear"
-alias less="less -R"
 alias diskusage="du -sh * | sort -h -r | less"
 alias py="python3"
 
@@ -150,11 +148,8 @@ else
 fi
 
 alias l="ls -al --color"
-alias lf='ls -F'
-alias lr='ls -lRh'
 
 # Find aliases
-alias f='find . -name'
 alias fl='find -L . -name'
 alias fd='find . -type d -name'
 alias ff='find . -type f -name'
@@ -163,9 +158,6 @@ alias fdl='find -L . -type d -name'
 alias ffl='find -L . -type f -name'
 alias flf='ffl'
 alias fld='fdl'
-
-#typo aliases (the rest are in aliases.sh)
-alias cls='clear'
 
 # Abbreviations shared with PowerShell and cmd.exe (git, cd .., ll, h, ...),
 # generated from .chezmoidata/aliases.yaml.
@@ -266,9 +258,6 @@ ssh() {
 # From Zack Browne's dotfiles:
 # https://gist.github.com/zachbrowne/8bc414c9f30192067831fafebd14255c
 
-# Set the default editor
-export EDITOR=nano
-export VISUAL=nano
 alias pico='edit'
 alias spico='sedit'
 alias nano='edit'
@@ -292,7 +281,6 @@ alias cp='cp -i'
 alias mv='mv -i'
 alias rm='rm -iv'
 alias mkdir='mkdir -p'
-alias ps='ps auxf'
 alias ping='ping -c 10'
 alias less='less -R'
 alias cls='clear'
@@ -405,20 +393,20 @@ sedit () { sudo $(_pico_cmd) "$@"; }
 
 # Extracts any archive(s) (if unp isn't installed)
 extract () {
-	for archive in $*; do
-		if [ -f $archive ] ; then
-			case $archive in
-				*.tar.bz2)   tar xvjf $archive    ;;
-				*.tar.gz)    tar xvzf $archive    ;;
-				*.bz2)       bunzip2 $archive     ;;
-				*.rar)       rar x $archive       ;;
-				*.gz)        gunzip $archive      ;;
-				*.tar)       tar xvf $archive     ;;
-				*.tbz2)      tar xvjf $archive    ;;
-				*.tgz)       tar xvzf $archive    ;;
-				*.zip)       unzip $archive       ;;
-				*.Z)         uncompress $archive  ;;
-				*.7z)        7z x $archive        ;;
+	for archive in "$@"; do
+		if [ -f "$archive" ] ; then
+			case "$archive" in
+				*.tar.bz2)   tar xvjf "$archive"    ;;
+				*.tar.gz)    tar xvzf "$archive"    ;;
+				*.bz2)       bunzip2 "$archive"     ;;
+				*.rar)       rar x "$archive"       ;;
+				*.gz)        gunzip "$archive"      ;;
+				*.tar)       tar xvf "$archive"     ;;
+				*.tbz2)      tar xvjf "$archive"    ;;
+				*.tgz)       tar xvzf "$archive"    ;;
+				*.zip)       unzip "$archive"       ;;
+				*.Z)         uncompress "$archive"  ;;
+				*.7z)        7z x "$archive"        ;;
 				*)           echo "don't know how to extract '$archive'..." ;;
 			esac
 		else
@@ -464,9 +452,9 @@ cpp()
 cpg ()
 {
 	if [ -d "$2" ];then
-		cp $1 $2 && cd $2
+		cp "$1" "$2" && cd "$2"
 	else
-		cp $1 $2
+		cp "$1" "$2"
 	fi
 }
 
@@ -474,25 +462,23 @@ cpg ()
 mvg ()
 {
 	if [ -d "$2" ];then
-		mv $1 $2 && cd $2
+		mv "$1" "$2" && cd "$2"
 	else
-		mv $1 $2
+		mv "$1" "$2"
 	fi
 }
 
 # Create and go to the directory
 mkdirg ()
 {
-	mkdir -p $1
-	cd $1
+	mkdir -p "$1" && cd "$1"
 }
 alias mcd='mkdirg'
 
 # Goes up a specified number of directories  (i.e. up 4)
 up ()
 {
-	local d=""
-	limit=$1
+	local d="" limit=$1 i
 	for ((i=1 ; i <= limit ; i++))
 		do
 			d=$d/..
@@ -501,7 +487,7 @@ up ()
 	if [ -z "$d" ]; then
 		d=..
 	fi
-	cd $d
+	cd "$d"
 }
 
 #Automatically do an ls after each cd
@@ -722,7 +708,7 @@ rot13 () {
 	if [ $# -eq 0 ]; then
 		tr '[a-m][n-z][A-M][N-Z]' '[n-z][a-m][N-Z][A-M]'
 	else
-		echo $* | tr '[a-m][n-z][A-M][N-Z]' '[n-z][a-m][N-Z][A-M]'
+		echo "$*" | tr '[a-m][n-z][A-M][N-Z]' '[n-z][a-m][N-Z][A-M]'
 	fi
 }
 
@@ -860,5 +846,8 @@ if [ -n "$ZSH_VERSION" ]; then
 	autoload -Uz add-zsh-hook
 	add-zsh-hook precmd __setprompt
 else
-	PROMPT_COMMAND='__setprompt'
+	case ";${PROMPT_COMMAND:-};" in
+		*";__setprompt;"*) ;; # already hooked; re-sourcing must not stack it
+		*) PROMPT_COMMAND="__setprompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;
+	esac
 fi
