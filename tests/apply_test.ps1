@@ -226,9 +226,16 @@ function Test-Gitconfig {
     }
 }
 
+# The commit .chezmoidata/claude-skills.yaml pins.
+function Get-SkillsPin {
+    $line = Select-String -Path (Join-Path $Src '.chezmoidata\claude-skills.yaml') -Pattern '^\s*commit:\s*(\S+)'
+    return $line.Matches[0].Groups[1].Value
+}
+
 function Test-SkillJunctions {
     Section 'claude-skills junctions'
     if (-not (Test-Path $Clone)) { Fail 'external not cloned to ~\code\claude-skills'; return }
+    Assert-Equal "pin: $(git -C $Clone rev-parse HEAD)" "pin: $(Get-SkillsPin)"
     # Not $skills: PowerShell names are case-insensitive and dynamically scoped,
     # so that would shadow $Skills inside Assert-Junction.
     $found = @(Get-RepoSkill)

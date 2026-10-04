@@ -1,0 +1,6 @@
+# The devnu11/claude-skills commit to check out in ~/code/claude-skills.
+# install.sh from that repo runs on every apply and its SKILL.md files become
+# instructions Claude follows, so it is pinned rather than pulled. To update,
+# review the new commits and put the new SHA here.
+claudeSkills:
+  commit: 47e1865615edc9038a0363ee9a2c479f0a3e6abd
