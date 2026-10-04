@@ -76,7 +76,7 @@ have() {
 
 # --- expectations -------------------------------------------------------
 
-MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell/lamaison.sh .bashrc .bash_profile
+MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell/lamaison.sh .shell/bashrc.sh .bashrc .bash_profile
 .zshenv .zprofile .zshrc .claude/CLAUDE.md .claude/hooks/chezmoi-guard.sh .claude/settings.json'
 
 # Source-dir furniture and Windows-only files stay out of ~.
@@ -260,6 +260,41 @@ check_no_script_acted() {
 	! grep -Eq '^(link|relink|prune) ' "$1" || fail "link script changed something on a re-run"
 }
 
+# A machine with dotfiles already: a team-shared ~/.bashrc symlink and a
+# work ~/.gitconfig. Run in a second scratch home so the checks above still
+# see a clean machine.
+check_existing_home() {
+	section "existing dotfiles"
+	FAKE_HOME="$WORK/existing"
+	seed_existing_home
+	bootstrap
+	check_shared_bashrc
+	check_backup .gitconfig "$WORK_GITCONFIG"
+	assert_eq "bash -lc: $(path_head bash -lc)" "bash -lc: $FAKE_HOME/.local/bin"
+}
+
+WORK_GITCONFIG='[user]
+	email = me@work.example'
+
+seed_existing_home() {
+	mkdir -p "$FAKE_HOME" "$WORK/shared"
+	echo '# team-wide bashrc' >"$WORK/shared/bashrc"
+	ln -s "$WORK/shared/bashrc" "$FAKE_HOME/.bashrc"
+	printf '%s\n' "$WORK_GITCONFIG" >"$FAKE_HOME/.gitconfig"
+}
+
+check_shared_bashrc() {
+	[ -L "$FAKE_HOME/.bashrc" ] || fail "shared ~/.bashrc symlink was replaced"
+	assert_eq "$(cat "$WORK/shared/bashrc")" "# team-wide bashrc"
+}
+
+# ~/.dotfiles-backup/<time>/$1 must hold content $2.
+check_backup() {
+	set -- "$FAKE_HOME"/.dotfiles-backup/*/"$1" "$2"
+	[ -f "$1" ] || { fail "no backup of ${1##*/}"; return; }
+	assert_eq "$(cat "$1")" "$2"
+}
+
 # --- main ---------------------------------------------------------------
 
 seed_claude_settings
@@ -278,6 +313,7 @@ check_idempotent
 check_claude_settings
 check_skill_links
 check_karabiner
+check_existing_home
 
 if [ -s "$FAILURES" ]; then
 	printf '\n%d failure(s)\n' "$(grep -c '^    FAIL' "$FAILURES")"

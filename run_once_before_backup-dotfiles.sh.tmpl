@@ -1,0 +1,16 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+# Before the first apply on this machine, copy every dotfile chezmoi may
+# replace into ~/.dotfiles-backup/<time>/. run_once_: it never runs again.
+# Targets come from .chezmoidata/existing.yaml.
+
+DEST="{{ .chezmoi.destDir }}"
+BACKUP="$DEST/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+
+for f in{{ range .existingTargets }} {{ . | quote }}{{ end }}; do
+	[ -e "$DEST/$f" ] || continue
+	mkdir -p "$BACKUP/$(dirname "$f")" || exit 1
+	cp -p "$DEST/$f" "$BACKUP/$f" || exit 1
+	echo "backup: ~/$f -> $BACKUP/$f"
+done
+{{ end -}}

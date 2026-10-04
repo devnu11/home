@@ -2,4 +2,9 @@
 # Login bash reads this instead of ~/.bashrc.
 
 [ -f "$HOME/.shell/env.sh" ] && . "$HOME/.shell/env.sh"
-[ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"
+[ -n "${__HOME_BASHRC:-}" ] || { [ -f "$HOME/.bashrc" ] && . "$HOME/.bashrc"; }
+
+# ~/.bashrc may be a shared file that is not ours; load our setup regardless.
+if [ -z "${__HOME_BASHRC:-}" ] && [ -f "$HOME/.shell/bashrc.sh" ]; then
+	. "$HOME/.shell/bashrc.sh"
+fi
