@@ -205,8 +205,8 @@ check_no_script_acted() {
 	! grep -Eq '^(link|relink|prune) ' "$1" || fail "link script changed something on a re-run"
 }
 
-# A machine with dotfiles already: a team-shared ~/.bashrc symlink and a
-# work ~/.gitconfig. Run in a second scratch home so the checks above still
+# A machine with dotfiles already: a team-shared ~/.bashrc symlink, a work
+# ~/.gitconfig, and a ~/.profile that login bash must still read. Run in a second scratch home so the checks above still
 # see a clean machine.
 check_existing_home() {
 	section "existing dotfiles"
@@ -215,6 +215,7 @@ check_existing_home() {
 	bootstrap
 	check_shared_bashrc
 	check_backup .gitconfig "$WORK_GITCONFIG"
+	assert_eq "~/.profile: $(in_home bash -lc 'echo "${WORK_PROFILE:-unread}"' </dev/null)" "~/.profile: read"
 	assert_eq "bash -lc: $(path_head bash -lc)" "bash -lc: $FAKE_HOME/.local/bin"
 }
 
@@ -226,6 +227,7 @@ seed_existing_home() {
 	echo '# team-wide bashrc' >"$WORK/shared/bashrc"
 	ln -s "$WORK/shared/bashrc" "$FAKE_HOME/.bashrc"
 	printf '%s\n' "$WORK_GITCONFIG" >"$FAKE_HOME/.gitconfig"
+	echo 'WORK_PROFILE=read' >"$FAKE_HOME/.profile"
 }
 
 check_shared_bashrc() {
