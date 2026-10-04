@@ -1,0 +1,12 @@
+# Machine-local shell settings. Managed by chezmoi, sourced from env.sh.
+# Values come from ~/.config/chezmoi/chezmoi.toml; edit that file (or delete
+# a key and re-run `chezmoi init`) to change them, then `chezmoi apply`.
+{{- /* Directories: expand a leading ~/ and drop a trailing slash, since the
+       prompt compares them against $PWD literally. */}}
+{{- $home := print .chezmoi.homeDir "/" }}
+LAMAISON_DEFAULT_USERNAME={{ .lamaisonDefaultUsername | squote }}
+LAMAISON_DEFAULT_HOSTNAME={{ .lamaisonDefaultHostname | squote }}
+LAMAISON_SSH_DEFAULT_HOST={{ .lamaisonSshDefaultHost | squote }}
+LAMAISON_SSH_HOST_EXPRESSION={{ .lamaisonSshHostExpression | squote }}
+LAMAISON_PS1_PWD_BLUE={{ regexReplaceAll "^~/" .lamaisonPs1PwdBlue $home | trimSuffix "/" | squote }}
+LAMAISON_PS1_PWD_CYAN={{ regexReplaceAll "^~/" .lamaisonPs1PwdCyan $home | trimSuffix "/" | squote }}

@@ -3,6 +3,13 @@
 {{- $name  := promptStringOnce . "name"  "Full name for git commits" -}}
 {{- $email := promptStringOnce . "email" "Email address for git commits" -}}
 {{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "work") -}}
+{{- /* Shell settings, written to ~/.shell/lamaison.sh as LAMAISON_* variables. */ -}}
+{{- $username := promptStringOnce . "lamaisonDefaultUsername" "Your username (shown as 'me' in the prompt)" .chezmoi.username -}}
+{{- $hostname := promptStringOnce . "lamaisonDefaultHostname" "Usual machine, shown grey in the prompt" .chezmoi.hostname -}}
+{{- $sshHost  := promptStringOnce . "lamaisonSshDefaultHost" "Host for a bare `ssh` (blank for none)" "" -}}
+{{- $sshExpr  := promptStringOnce . "lamaisonSshHostExpression" "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)" "" -}}
+{{- $pwdBlue  := promptStringOnce . "lamaisonPs1PwdBlue" "Directory shown blue in the prompt (blank for none)" "" -}}
+{{- $pwdCyan  := promptStringOnce . "lamaisonPs1PwdCyan" "Directory shown cyan in the prompt (blank for none)" "" -}}
 
 # Where this repo is checked out on this machine. Captured at `chezmoi init
 # --source=<path>` time so later commands find it without the flag.
@@ -12,3 +19,9 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     name = {{ $name | quote }}
     email = {{ $email | quote }}
     profile = {{ $profile | quote }}
+    lamaisonDefaultUsername = {{ $username | quote }}
+    lamaisonDefaultHostname = {{ $hostname | quote }}
+    lamaisonSshDefaultHost = {{ $sshHost | quote }}
+    lamaisonSshHostExpression = {{ $sshExpr | quote }}
+    lamaisonPs1PwdBlue = {{ $pwdBlue | quote }}
+    lamaisonPs1PwdCyan = {{ $pwdCyan | quote }}

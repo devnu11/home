@@ -17,27 +17,41 @@ elif [ -n "$ZSH_VERSION" ]; then
 	setopt HIST_IGNORE_DUPS HIST_IGNORE_SPACE HIST_REDUCE_BLANKS
 fi
 
-# Define colors
-COLOR_LIGHTGRAY="\033[0;37m"
-COLOR_WHITE="\033[1;37m"
-COLOR_BLACK="\033[0;30m"
-COLOR_DARKGRAY="\033[1;30m"
-COLOR_RED="\033[0;31m"
-COLOR_LIGHTRED="\033[1;31m"
-COLOR_GREEN="\033[0;32m"
-COLOR_LIGHTGREEN="\033[1;32m"
-COLOR_BROWN="\033[0;33m"
-COLOR_YELLOW="\033[1;33m"
-COLOR_BLUE="\033[0;34m"
-COLOR_LIGHTBLUE="\033[1;34m"
-COLOR_MAGENTA="\033[0;35m"
-COLOR_LIGHTMAGENTA="\033[1;35m"
-COLOR_CYAN="\033[0;36m"
-COLOR_LIGHTCYAN="\033[1;36m"
-COLOR_NOCOLOR="\033[0m"
+# Define colors (real escape characters, so both bash and zsh prompts work)
+COLOR_LIGHTGRAY=$'\033[0;37m'
+COLOR_WHITE=$'\033[1;37m'
+COLOR_BLACK=$'\033[0;30m'
+COLOR_DARKGRAY=$'\033[1;30m'
+COLOR_RED=$'\033[0;31m'
+COLOR_LIGHTRED=$'\033[1;31m'
+COLOR_GREEN=$'\033[0;32m'
+COLOR_LIGHTGREEN=$'\033[1;32m'
+COLOR_BROWN=$'\033[0;33m'
+COLOR_YELLOW=$'\033[1;33m'
+COLOR_BLUE=$'\033[0;34m'
+COLOR_LIGHTBLUE=$'\033[1;34m'
+COLOR_MAGENTA=$'\033[0;35m'
+COLOR_LIGHTMAGENTA=$'\033[1;35m'
+COLOR_CYAN=$'\033[0;36m'
+COLOR_LIGHTCYAN=$'\033[1;36m'
+COLOR_NOCOLOR=$'\033[0m'
 
 EMOJI_THUMBSUP="👍"
 EMOJI_ENRAGED="😡"
+
+# --- Prompt -------------------------------------------------------------
+# One builder for both shells. They differ only in how a prompt marks
+# non-printing text (bash \[ \], zsh %{ %}) and spells user/host/directory.
+if [ -n "$ZSH_VERSION" ]; then
+	__P_OPEN='%{' __P_CLOSE='%}' __P_USER='%n' __P_HOST='%m' __P_DIR='%1~'
+else
+	__P_OPEN='\[' __P_CLOSE='\]' __P_USER='\u' __P_HOST='\h' __P_DIR='\W'
+fi
+
+# Append $2 to __PROMPT in colour $1.
+__prompt_add() {
+	__PROMPT+="${__P_OPEN}$1${__P_CLOSE}$2"
+}
 
 # True when $PWD is $1 or below it; always false for an empty $1.
 __pwd_under() {
@@ -48,61 +62,72 @@ __pwd_under() {
 	esac
 }
 
-# Print the prompt colour for the current directory.
-__prompt_dir_color() {
-	if __pwd_under "$CHEZMOI_PS1_PWD_BLUE"; then
-		printf '%s' "$COLOR_BLUE"
-	elif __pwd_under "$CHEZMOI_PS1_PWD_CYAN"; then
-		printf '%s' "$COLOR_CYAN"
+# Exit status of the last command, $1.
+__prompt_status() {
+	local code
+	if [ "$1" -eq 0 ]; then
+		__prompt_add "$COLOR_GREEN" "$EMOJI_THUMBSUP 000"
+	else
+		printf -v code '%03d' "$1"
+		__prompt_add "$COLOR_RED" "$EMOJI_ENRAGED $code"
+	fi
+}
+
+__prompt_user() {
+	case $USER in
+		"$LAMAISON_DEFAULT_USERNAME"|devans|d.evans|dave|djevans)
+			__prompt_add "$COLOR_DARKGRAY" "me" ;;
+		*)
+			if [ "$EUID" -eq 0 ]; then
+				__prompt_add "$COLOR_RED" "$__P_USER"
+			else
+				__prompt_add "$COLOR_MAGENTA" "$__P_USER"
+			fi ;;
+	esac
+}
+
+# Hostnames are compared without their domain (bash may report foo.local).
+__prompt_host() {
+	local host=${HOSTNAME:-$HOST}
+	case ${host%%.*} in
+		"${LAMAISON_DEFAULT_HOSTNAME%%.*}") __prompt_add "$COLOR_DARKGRAY" "@$__P_HOST" ;;
+		homeassistant) __prompt_add "$COLOR_MAGENTA" "@$__P_HOST" ;;
+		*) __prompt_add "$COLOR_RED" "@$__P_HOST" ;;
+	esac
+}
+
+__prompt_dir() {
+	local color=$COLOR_RED
+	if __pwd_under "$LAMAISON_PS1_PWD_BLUE"; then
+		color=$COLOR_BLUE
+	elif __pwd_under "$LAMAISON_PS1_PWD_CYAN"; then
+		color=$COLOR_CYAN
 	elif __pwd_under "$HOME"; then
-		printf '%s' "$COLOR_GREEN"
-	else
-		printf '%s' "$COLOR_RED"
+		color=$COLOR_GREEN
 	fi
+	__prompt_add "$COLOR_DARKGRAY" ":"
+	__prompt_add "$color" "$__P_DIR"
 }
 
-# Bash-only: builds PS1 from scratch on every prompt via PROMPT_COMMAND.
-function __setprompt() {
-	local LAST_COMMAND=$? # Must come first!
-
-	# Show the last exit code
-	if [[ $LAST_COMMAND == 0 ]]; then
-		PS1="$EMOJI_THUMBSUP \[${COLOR_GREEN}\]$LAST_COMMAND\[${COLOR_NOCOLOR}\] ["
-	else
-		PS1="$EMOJI_ENRAGED \[${COLOR_RED}\]$(printf "%03d" $LAST_COMMAND)\[${COLOR_NOCOLOR}\] ["
-	fi
-
-	# If its me
-	if [[ $USER == "$CHEZMOI_DEFAULT_USERNAME" ]] || [[ $USER == "devans" ]] || [[ $USER == "d.evans" ]] || [[ $USER == "dave" ]] || [[ $USER == "djevans" ]]; then
-		PS1+="\[${COLOR_DARKGRAY}\]me\[${COLOR_NOCOLOR}\]"
-	elif [[ $USER == "root" ]] || [[ $EUID -eq 0 ]]; then
-		PS1+="\[${COLOR_RED}\]\u\[${COLOR_DARKGRAY}\]"
-	else
-		PS1+="\[${COLOR_MAGENTA}\]\u\[${COLOR_DARKGRAY}\]"
-	fi
-
-	# Host Name
-	# If its my usual machine
-	if [[ $HOSTNAME == "$CHEZMOI_DEFAULT_HOSTNAME" ]]; then
-		PS1+="\[${COLOR_DARKGRAY}\]@\h\[${COLOR_NOCOLOR}\]"
-	elif [[ $HOSTNAME == "homeassistant" ]]; then
-		PS1+="\[${COLOR_MAGENTA}\]@\h\[${COLOR_NOCOLOR}\]"
-	else
-		PS1+="\[${COLOR_RED}\]@\h\[${COLOR_NOCOLOR}\]"
-	fi
-
-	# Current directory
-	PS1+="\[${COLOR_DARKGRAY}\]:\[$(__prompt_dir_color)\]\W\[${COLOR_NOCOLOR}\]] "
-
-	# PS2 is used to continue a command using the \ character
-	PS2="\[${COLOR_DARKGRAY}\]>\[${COLOR_NOCOLOR}\] "
-
-	# PS3 is used to enter a number choice in a script
-	PS3='Please enter a number from above list: '
-
-	# PS4 is used for tracing a script in debug mode
-	PS4='\[${COLOR_DARKGRAY}\]+\[${COLOR_NOCOLOR}\] '
+# Rebuild PS1 before every prompt (PROMPT_COMMAND in bash, precmd in zsh,
+# where PS1 is the same parameter as PROMPT).
+__setprompt() {
+	local last=$? # Must come first!
+	__PROMPT=""
+	__prompt_status "$last"
+	__prompt_add "$COLOR_NOCOLOR" " ["
+	__prompt_user
+	__prompt_host
+	__prompt_dir
+	__prompt_add "$COLOR_NOCOLOR" "] "
+	PS1=$__PROMPT
 }
+
+# PS2 is used to continue a command using the \ character
+PS2="${__P_OPEN}${COLOR_DARKGRAY}${__P_CLOSE}>${__P_OPEN}${COLOR_NOCOLOR}${__P_CLOSE} "
+
+# PS3 is used to enter a number choice in a script
+PS3='Please enter a number from above list: '
 
 alias cls="clear"
 alias mkd="mkdir -p"
@@ -252,11 +277,11 @@ ssh() {
 
 	if [[ $# -eq 0 ]]; then
 		echo "Usage: ssh <user@host> [command]"
-		[ -n "$LAMAISON_DEFAULT_HOSTNAME" ] || return 1
-		args+=("$LAMAISON_DEFAULT_HOSTNAME")
-	elif [[ $# -eq 1 && $1 =~ ^[0-9]+$ && -n $LAMAISON_DEFAULT_HOSTNAME_EXPRESSION ]]; then
+		[ -n "$LAMAISON_SSH_DEFAULT_HOST" ] || return 1
+		args+=("$LAMAISON_SSH_DEFAULT_HOST")
+	elif [[ $# -eq 1 && $1 =~ ^[0-9]+$ && -n $LAMAISON_SSH_HOST_EXPRESSION ]]; then
 		# A bare number is expanded into a host name
-		args+=("$(printf "$LAMAISON_DEFAULT_HOSTNAME_EXPRESSION" "$1")")
+		args+=("$(printf "$LAMAISON_SSH_HOST_EXPRESSION" "$1")")
 	else
 		args+=("$@")
 	fi
@@ -876,4 +901,9 @@ function __setprompt_ken
 	# PS4 is used for tracing a script in debug mode
 	PS4='\[${DARKGRAY}\]+\[${NOCOLOR}\] '
 }
-PROMPT_COMMAND='__setprompt'
+if [ -n "$ZSH_VERSION" ]; then
+	autoload -Uz add-zsh-hook
+	add-zsh-hook precmd __setprompt
+else
+	PROMPT_COMMAND='__setprompt'
+fi
