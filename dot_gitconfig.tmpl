@@ -88,7 +88,7 @@
 {{ if eq .chezmoi.os "windows" -}}
 # --- Windows tool paths -------------------------------------------------
 # Chocolatey default install locations:
-#   choco install notepadplusplus beyondcompare
+#   choco install notepadplusplus  (Beyond Compare: .chezmoidata/packages.yaml)
 # Chocolatey's shims (C:\ProgramData\chocolatey\bin) are on PATH, but shims for
 # GUI apps return immediately instead of waiting for the window to close, which
 # breaks git's editor/difftool/mergetool. So these point at the real .exe.
@@ -97,18 +97,18 @@
 [core]
 	editor = 'C:/Program Files/Notepad++/notepad++.exe' -multiInst -notabbar -nosession -noPlugin
 [diff]
-	tool = bc4
-	guitool = bc4
+	tool = bc5
+	guitool = bc5
 [difftool]
 	prompt = false
-[difftool "bc4"]
-	path = C:/Program Files/Beyond Compare 4/BComp.exe
-	cmd = \"C:/Program Files/Beyond Compare 4/BComp.exe\" \"$LOCAL\" \"$REMOTE\"
+[difftool "bc5"]
+	path = C:/Program Files/Beyond Compare 5/BComp.exe
+	cmd = \"C:/Program Files/Beyond Compare 5/BComp.exe\" \"$LOCAL\" \"$REMOTE\"
 [merge]
-	tool = bc4
-[mergetool "bc4"]
-	path = C:/Program Files/Beyond Compare 4/BComp.exe
-	cmd = \"C:/Program Files/Beyond Compare 4/BComp.exe\" \"$LOCAL\" \"$REMOTE\" \"$BASE\" \"$MERGED\"
+	tool = bc5
+[mergetool "bc5"]
+	path = C:/Program Files/Beyond Compare 5/BComp.exe
+	cmd = \"C:/Program Files/Beyond Compare 5/BComp.exe\" \"$LOCAL\" \"$REMOTE\" \"$BASE\" \"$MERGED\"
 {{ end -}}
 
 # Last include wins: this is where corporate email, proxies, signing keys,
