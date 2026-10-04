@@ -16,7 +16,9 @@ echo "packages: brew not installed, skipping (see https://brew.sh)" >&2
 {{   end -}}
 {{ else if .packages.apt -}}
 {{   if lookPath "apt-get" -}}
-sudo apt-get install -y{{ range .packages.apt }} {{ . | quote }}{{ end }}
+# Shared work machines often deny sudo; warn instead of failing every apply.
+sudo apt-get install -y{{ range .packages.apt }} {{ . | quote }}{{ end }} ||
+	echo "packages: apt-get failed (no sudo?); skipped until packages.yaml changes" >&2
 {{   else -}}
 echo "packages: apt-get not found, skipping" >&2
 {{   end -}}

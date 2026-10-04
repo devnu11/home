@@ -10,11 +10,25 @@ packages:
   choco:
     - beyondcompare     # git difftool/mergetool, see dot_gitconfig.tmpl
     - unxutils          # native Win32 GNU utilities (grep, sed, awk, ...)
+    - notepadplusplus   # git core.editor, see dot_gitconfig.tmpl
+    - uv                # runs handy
+    - nodejs-lts
+    - fzf
+    - ripgrep
   brew:
-    formulae: []
+    formulae:
+      - uv
+      - node            # current release; brew's LTS formulae are versioned (node@22)
+      - fzf
+      - ripgrep
     casks:
       - beyond-compare
       - karabiner-elements  # rules in private_dot_config/karabiner, enabled by run_onchange_after_enable-karabiner-rules
-  # Beyond Compare is not in Debian/Ubuntu repos: install Scooter Software's
-  # .deb by hand from https://www.scootersoftware.com/download.
-  apt: []
+  # Not from apt:
+  # - Beyond Compare: Scooter Software's .deb, https://www.scootersoftware.com/download
+  # - uv: not packaged; https://docs.astral.sh/uv/getting-started/installation/
+  # - node: distro versions lag far behind; use nvm or NodeSource
+  # - Notepad++: Windows only
+  apt:
+    - fzf
+    - ripgrep
