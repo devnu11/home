@@ -51,7 +51,7 @@ $ChocoPackages = 'beyondcompare', 'unxutils'
 $GitValues = [ordered]@{
     'user.email'    = 'ci@example.com'
     'core.autocrlf' = 'true'
-    'diff.tool'     = 'bc4'
+    'diff.tool'     = 'bc5'
 }
 
 # --- helpers ------------------------------------------------------------
