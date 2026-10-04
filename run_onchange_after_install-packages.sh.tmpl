@@ -1,0 +1,24 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+# Install the packages listed in .chezmoidata/packages.yaml.
+# chezmoi reruns this whenever its rendered text changes: when a list changes,
+# or when the package manager first shows up on PATH (lookPath below).
+# HOME_PACKAGES=skip turns it off, for tests.
+
+[ "${HOME_PACKAGES:-}" != skip ] || exit 0
+set -e
+{{ if eq .chezmoi.os "darwin" -}}
+{{   if lookPath "brew" -}}
+{{     with .packages.brew.formulae }}brew install{{ range . }} {{ . | quote }}{{ end }}{{ end }}
+{{     with .packages.brew.casks }}brew install --cask{{ range . }} {{ . | quote }}{{ end }}{{ end }}
+{{   else -}}
+echo "packages: brew not installed, skipping (see https://brew.sh)" >&2
+{{   end -}}
+{{ else if .packages.apt -}}
+{{   if lookPath "apt-get" -}}
+sudo apt-get install -y{{ range .packages.apt }} {{ . | quote }}{{ end }}
+{{   else -}}
+echo "packages: apt-get not found, skipping" >&2
+{{   end -}}
+{{ end -}}
+{{ end -}}

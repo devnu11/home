@@ -1,0 +1,19 @@
+# Packages installed on `chezmoi apply`, per package manager. Add a name to a
+# list and the next apply installs it; run_onchange_after_install-packages.*
+# reruns whenever this file changes. Removing a name does not uninstall it.
+#
+# Only the lists for this OS's manager are used:
+#   choco  - Windows (needs an elevated shell)
+#   brew   - macOS
+#   apt    - Debian/Ubuntu Linux (uses sudo)
+packages:
+  choco:
+    - beyondcompare     # git difftool/mergetool, see dot_gitconfig.tmpl
+    - unxutils          # native Win32 GNU utilities (grep, sed, awk, ...)
+  brew:
+    formulae: []
+    casks:
+      - beyond-compare
+  # Beyond Compare is not in Debian/Ubuntu repos: install Scooter Software's
+  # .deb by hand from https://www.scootersoftware.com/download.
+  apt: []
