@@ -179,7 +179,8 @@ check_packages() {
 # Empty where the package manager is missing: the script then only warns.
 expected_packages() {
 	case "$(uname -s)" in
-		Darwin) command -v brew >/dev/null 2>&1 && echo beyond-compare karabiner-elements ;;
+		Darwin) command -v brew >/dev/null 2>&1 && echo uv node fzf ripgrep beyond-compare karabiner-elements ;;
+		Linux) command -v apt-get >/dev/null 2>&1 && echo fzf ripgrep ;;
 	esac
 }
 
