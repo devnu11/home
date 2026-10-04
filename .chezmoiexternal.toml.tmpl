@@ -11,6 +11,7 @@
 ["code/claude-skills"]
 	type = "git-repo"
 	url = "https://github.com/devnu11/claude-skills.git"
-	refreshPeriod = "168h"
-	["code/claude-skills".pull]
-		args = ["--ff-only"]
+	# Never pulled: run_onchange_after_checkout-claude-skills checks out the
+	# commit pinned in .chezmoidata/claude-skills.yaml, so code from that repo
+	# only runs here once its commit is named in this (reviewed) repo.
+	refreshPeriod = "0"

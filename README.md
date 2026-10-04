@@ -57,7 +57,7 @@ things soften that:
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
 | `private_dot_claude/hooks/chezmoi-guard.sh` | `~/.claude/hooks/chezmoi-guard.sh` | Claude Code hook: sessions must ask before `chezmoi apply` and friends; see below |
 | `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
-| `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo; see below |
+| `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo, pinned; see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
 | `private_dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
@@ -249,13 +249,22 @@ standalone and the two paths can't drift. It only touches symlinks pointing
 back into that repo, leaving `synced/` and any hand-made skill directory alone,
 and it prunes links to skills that have been deleted.
 
-`chezmoi diff` can't show what that will do: it only sees the wrapper, and
-`install.sh` lives in `~/code/claude-skills`, outside this repo. Before an
-apply, preview the links and any pending pull of the external:
+The clone is **pinned**, not pulled: `install.sh` runs on every apply and the
+skills become instructions Claude follows, so a change to that repo should only
+reach a machine once it is named here. chezmoi never refreshes the external;
+`run_onchange_after_checkout-claude-skills` checks out the commit in
+[`.chezmoidata/claude-skills.yaml`](.chezmoidata/claude-skills.yaml) (detached
+HEAD). To take new skills, review the commits and bump that SHA. To develop
+skills in the clone, `git switch main` there first; a dirty clone makes the
+checkout fail rather than lose your changes.
+
+`chezmoi diff` can't show what that will do: it only sees the wrapper scripts,
+and `install.sh` lives in `~/code/claude-skills`, outside this repo. Before an
+apply, preview what the checkout brings in and what the links will do:
 
 ```sh
+git -C ~/code/claude-skills log --oneline HEAD..<pinned sha>
 CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run
-git -C ~/code/claude-skills fetch && git -C ~/code/claude-skills log --oneline HEAD..@{u}
 ```
 
 ## handy
