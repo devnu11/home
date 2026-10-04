@@ -51,7 +51,7 @@ things soften that:
 | `dot_shell/bashrc.sh` | `~/.shell/bashrc.sh` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
 | `Documents/PowerShell/Microsoft.PowerShell_profile.ps1` | `$PROFILE` | Windows only |
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
-| `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo; see below |
+| `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo, pinned; see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
 
@@ -166,6 +166,15 @@ Linking is done by the skills repo's own `install.sh`, so the repo works
 standalone and the two paths can't drift. It only touches symlinks pointing
 back into that repo, leaving `synced/` and any hand-made skill directory alone,
 and it prunes links to skills that have been deleted.
+
+The clone is **pinned**, not pulled: `install.sh` runs on every apply and the
+skills become instructions Claude follows, so a change to that repo should only
+reach a machine once it is named here. chezmoi never refreshes the external;
+`run_onchange_after_checkout-claude-skills` checks out the commit in
+[`.chezmoidata/claude-skills.yaml`](.chezmoidata/claude-skills.yaml) (detached
+HEAD). To take new skills, review the commits and bump that SHA. To develop
+skills in the clone, `git switch main` there first; a dirty clone makes the
+checkout fail rather than lose your changes.
 
 ## handy
 

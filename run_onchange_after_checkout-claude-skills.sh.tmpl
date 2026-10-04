@@ -1,0 +1,14 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/sh
+# Check out the pinned claude-skills commit. Reruns when the pin changes.
+# Runs before run_after_link-claude-skills (scripts run in name order).
+# A clone with uncommitted changes makes checkout fail, which keeps them.
+
+REPO="{{ .chezmoi.destDir }}/code/claude-skills"
+PIN="{{ .claudeSkills.commit }}"
+
+[ -d "$REPO/.git" ] || exit 0
+git -C "$REPO" cat-file -e "$PIN^{commit}" 2>/dev/null || git -C "$REPO" fetch --quiet origin || exit 1
+git -C "$REPO" checkout --quiet --detach "$PIN" || exit 1
+echo "claude-skills: at $PIN"
+{{ end -}}

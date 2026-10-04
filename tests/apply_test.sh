@@ -127,11 +127,17 @@ check_skill_links() {
 	section "claude-skills links"
 	clone="$FAKE_HOME/code/claude-skills"
 	[ -x "$clone/install.sh" ] || { fail "external not cloned to ~/code/claude-skills"; return; }
+	assert_eq "pin: $(git -C "$clone" rev-parse HEAD)" "pin: $(skills_pin)"
 	set -- "$clone"/*/SKILL.md
 	[ -f "$1" ] || fail "no skills found in the claude-skills clone"
 	for manifest; do
 		[ -f "$manifest" ] && check_skill_link "${manifest%/SKILL.md}"
 	done
+}
+
+# The commit .chezmoidata/claude-skills.yaml pins.
+skills_pin() {
+	sed -n 's/^ *commit: *//p' "$SRC/.chezmoidata/claude-skills.yaml"
 }
 
 # ~/.claude/skills/<name> must be a symlink to the skill directory $1.
