@@ -5,4 +5,4 @@
 
 # Machine-local additions (corporate proxies, PATH entries, work aliases).
 # Not tracked in the dotfiles repo.
-[ -f "$HOME/.zshrc.local" ] && . "$HOME/.zshrc.local"
+if [ -f "$HOME/.zshrc.local" ]; then . "$HOME/.zshrc.local"; fi

@@ -15,4 +15,4 @@ esac
 
 # Machine-local additions (corporate proxies, PATH entries, work aliases).
 # Not tracked in the dotfiles repo.
-[ -f "$HOME/.bashrc.local" ] && . "$HOME/.bashrc.local"
+if [ -f "$HOME/.bashrc.local" ]; then . "$HOME/.bashrc.local"; fi
