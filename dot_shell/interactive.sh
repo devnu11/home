@@ -129,8 +129,6 @@ PS2="${__P_OPEN}${COLOR_DARKGRAY}${__P_CLOSE}>${__P_OPEN}${COLOR_NOCOLOR}${__P_C
 # PS3 is used to enter a number choice in a script
 PS3='Please enter a number from above list: '
 
-alias diskusage="du -sh * | sort -h -r | less"
-alias py="python3"
 
 # One PATH entry per line, read when called rather than at startup.
 # Re-sourcing over the old `path` alias would expand it inside the definition.
@@ -141,27 +139,11 @@ path() { printf '%s\n' "$PATH" | tr ':' '\n' | less; }
 # GNU coreutils spells colour --color=auto; older BSD ls only knows -G.
 # (Current macOS ls understands --color and honours it more reliably than -G.)
 if ls --color=auto >/dev/null 2>&1; then
-	alias ls='ls -aFh --color=auto'
+	LS_COLOR_FLAG=--color=auto
 else
 	export CLICOLOR=1
-	alias ls='ls -aFh -G'
+	LS_COLOR_FLAG=-G
 fi
-
-alias l="ls -al --color"
-
-# Find aliases
-alias fl='find -L . -name'
-alias fd='find . -type d -name'
-alias ff='find . -type f -name'
-alias fx='find . -type f -executable -name'
-alias fdl='find -L . -type d -name'
-alias ffl='find -L . -type f -name'
-alias flf='ffl'
-alias fld='fdl'
-
-# Abbreviations shared with PowerShell and cmd.exe (git, cd .., ll, h, ...),
-# generated from .chezmoidata/aliases.yaml.
-[ -f "$HOME/.shell/aliases.sh" ] && . "$HOME/.shell/aliases.sh"
 
 # List subdirectories by total size, largest first.
 # `sort -h` is in both GNU and BSD sort; the original used GNU-only `xargs -d`.
@@ -255,13 +237,15 @@ ssh() {
 }
 
 
+# --- Aliases ------------------------------------------------------------
+# Every alias, for all shells, lives in .chezmoidata/aliases.yaml; this sources
+# the generated bash/zsh copy. Sourced here, not earlier: aliases expand inside
+# function bodies when the function is defined, and the functions above (the
+# handy hook's mv, for one) must keep running the plain commands.
+[ -f "$HOME/.shell/aliases.sh" ] && . "$HOME/.shell/aliases.sh"
+
 # From Zack Browne's dotfiles:
 # https://gist.github.com/zachbrowne/8bc414c9f30192067831fafebd14255c
-
-alias pico='edit'
-alias spico='sedit'
-alias nano='edit'
-alias snano='sedit'
 
 # To have colors for ls and all grep commands such as grep, egrep and zgrep
 export CLICOLOR=1
@@ -275,89 +259,6 @@ export LESS_TERMCAP_se=$'\E[0m'
 export LESS_TERMCAP_so=$'\E[01;44;33m'
 export LESS_TERMCAP_ue=$'\E[0m'
 export LESS_TERMCAP_us=$'\E[01;32m'
-
-# Alias's to modified commands
-alias cp='cp -i'
-alias mv='mv -i'
-alias rm='rm -iv'
-alias mkdir='mkdir -p'
-alias ping='ping -c 10'
-alias less='less -R'
-alias cls='clear'
-alias apt-get='sudo apt-get'
-alias multitail='multitail --no-repeat -c'
-#alias freshclam='sudo freshclam'
-#alias vi='vim'
-#alias svi='sudo vi'
-#alias vis='vim "+set si"'
-
-# Remove a directory and all files
-alias rmd='/bin/rm -rfv '
-
-# Alias's for multiple directory listing commands
-alias lx='ls -lXBh' # sort by extension
-alias lk='ls -lSrh' # sort by size
-alias lc='ls -lcrh' # sort by change time
-alias lu='ls -lurh' # sort by access time
-alias lr='ls -lRh' # recursive ls
-alias lt='ls -ltrh' # sort by date
-alias lm='ls -alh |more' # pipe through 'more'
-alias lw='ls -xAh' # wide listing format
-alias labc='ls -lap' #alphabetical sort
-alias lf="ls -l | egrep -v '^d'" # files only
-alias ldir="ls -l | egrep '^d'" # directories only
-
-# alias chmod commands
-alias mx='chmod a+x'
-alias 000='chmod -R 000'
-alias 644='chmod -R 644'
-alias 666='chmod -R 666'
-alias 755='chmod -R 755'
-alias 777='chmod -R 777'
-
-# Top processes by CPU (h and p, the history and process search, are in aliases.sh)
-alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
-
-# Search files in the current folder
-alias f="find . | grep "
-
-# Count all files (recursively) in the current folder
-alias countfiles="for t in files links directories; do echo \`find . -type \${t:0:1} | wc -l\` \$t; done 2> /dev/null"
-
-# To see if a command is aliased, a file, or a built-in command
-alias checkcommand="type -t"
-
-# Show current network connections to the server
-alias ipview="netstat -anpl | grep :80 | awk {'print \$5'} | cut -d\":\" -f1 | sort | uniq -c | sort -n | sed -e 's/^ *//' -e 's/ *\$//'"
-
-# Show open ports
-alias openports='netstat -nape --inet'
-
-# Alias's for safe and forced reboots
-alias rebootsafe='sudo shutdown -r now'
-alias rebootforce='sudo shutdown -r -n now'
-
-# Alias's to show disk space and space used in a folder
-alias diskspace="du -S | sort -n -r |more"
-alias folders='du -h --max-depth=1'
-alias folderssort='find . -maxdepth 1 -type d -print0 | xargs -0 du -sk | sort -rn'
-alias tree='tree -CAhF --dirsfirst'
-alias treed='tree -CAFd'
-alias mountedinfo='df -hT'
-
-# Alias's for archives
-alias mktar='tar -cvf'
-alias mkbz2='tar -cvjf'
-alias mkgz='tar -cvzf'
-alias untar='tar -xvf'
-alias unbz2='tar -xvjf'
-alias ungz='tar -xvzf'
-
-# Show all logs in /var/log
-alias logs="sudo find /var/log -type f -exec file {} \; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"
-
-# SHA1
-alias sha1='openssl sha1'
 
 #######################################################
 # SPECIAL FUNCTIONS
@@ -473,7 +374,6 @@ mkdirg ()
 {
 	mkdir -p "$1" && cd "$1"
 }
-alias mcd='mkdirg'
 
 # Goes up a specified number of directories  (i.e. up 4)
 up ()
@@ -624,7 +524,6 @@ netinfo ()
 }
 
 # IP address lookup
-alias whatismyip="whatsmyip"
 function whatsmyip ()
 {
 	# Dumps a list of all IP addresses for every device
@@ -725,7 +624,6 @@ trim()
 # Set the ultimate amazing command prompt
 #######################################################
 
-alias cpu="grep 'cpu ' /proc/stat | awk '{usage=(\$2+\$4)*100/(\$2+\$4+\$5)} END {print usage}' | awk '{printf(\"%.1f\n\", \$1)}'"
 function __setprompt_ken
 {
 	local LAST_COMMAND=$? # Must come first!
