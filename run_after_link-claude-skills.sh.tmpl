@@ -4,6 +4,11 @@
 # Runs on every apply; cheap and idempotent. The repo's own install.sh does
 # the work, so the two stay in step and the repo remains usable without
 # chezmoi.
+#
+# `chezmoi diff` shows only this wrapper, never what install.sh will change.
+# install.sh lives in ~/code/claude-skills (cloned from
+# github.com/devnu11/claude-skills by .chezmoiexternal.toml). Preview it with:
+#   CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run
 
 REPO="{{ .chezmoi.destDir }}/code/claude-skills"
 
