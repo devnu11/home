@@ -3,4 +3,4 @@
 # instructions Claude follows, so it is pinned rather than pulled. To update,
 # review the new commits and put the new SHA here.
 claudeSkills:
-  commit: 47e1865615edc9038a0363ee9a2c479f0a3e6abd
+  commit: 391b8b26355ae99f699843ebb8daf9e10a3592da
