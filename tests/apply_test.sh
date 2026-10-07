@@ -118,9 +118,15 @@ check_targets() {
 	section "targets"
 	for f in $MANAGED; do assert_file "$f"; done
 	for f in $UNMANAGED; do assert_absent "$f"; done
-	case "$(ls -ld "$FAKE_HOME/.claude")" in
+	for dir in .claude .config; do assert_private_dir "$dir"; done
+}
+
+# ~/$1 must be mode 0700: nobody else may list or traverse it.
+assert_private_dir() {
+	[ -d "$FAKE_HOME/$1" ] || return 0
+	case "$(ls -ld "$FAKE_HOME/$1")" in
 		drwx------*) ;;
-		*) fail "~/.claude is not mode 0700" ;;
+		*) fail "~/$1 is not mode 0700" ;;
 	esac
 }
 
