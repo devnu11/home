@@ -6,7 +6,9 @@
 #
 # A plain string is the same command in all three. A map lists only the shells
 # the alias exists in, so leaving a shell out skips it there. In cmd, `$B` is a
-# pipe. Every bash/zsh alias lives here (even Unix-only ones) so there is one
+# pipe. Arguments go at the end unless a PowerShell command says where with
+# `@args` (or a cmd one with `$*`), e.g. `Get-ChildItem @args | Sort-Object x`;
+# bash/zsh aliases can only take them at the end. Every bash/zsh alias lives here (even Unix-only ones) so there is one
 # place to look; only functions stay in interactive.sh.
 #
 # In PowerShell these win over built-in aliases of the same name (gc, gl, gp,
@@ -52,6 +54,7 @@ aliases:
   ll: {sh: ls -Fls, pwsh: Get-ChildItem, cmd: dir}
   la: {sh: ls -Alh, pwsh: Get-ChildItem -Force, cmd: dir /a}
   kk: ll
+  which: {pwsh: Get-Command @args -All | Select-Object -ExpandProperty Source}
 
   # --- files -----------------------------------------------------------
   c: {sh: cat, pwsh: Get-Content, cmd: type}
@@ -72,10 +75,10 @@ aliases:
   lf: {sh: "ls -l | egrep -v '^d'"}
   lr: {sh: "ls -lRh"}
   lx: {sh: "ls -lXBh"}
-  lk: {sh: "ls -lSrh"}
+  lk: {sh: "ls -lSrh", pwsh: Get-ChildItem @args | Sort-Object Length}
   lc: {sh: "ls -lcrh"}
   lu: {sh: "ls -lurh"}
-  lt: {sh: "ls -ltrh"}
+  lt: {sh: "ls -ltrh", pwsh: Get-ChildItem @args | Sort-Object LastWriteTime}
   lm: {sh: "ls -alh |more"}
   lw: {sh: "ls -xAh"}
   labc: {sh: "ls -lap"}
