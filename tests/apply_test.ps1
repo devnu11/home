@@ -242,7 +242,7 @@ function Test-AddSkill {
 function Test-PruneSkill {
     Section 'remove that skill'
     Remove-Item -Recurse -Force (Join-Path $Clone 'zz-ci-added')
-    Assert-Reported (Invoke-Chezmoi apply) 'prune\s+zz-ci-added'
+    Assert-Reported (Invoke-Chezmoi apply) 'prune\s+zz-ci-added \(was -> .*zz-ci-added\)'
     Assert-Absent '.claude\skills\zz-ci-added'
 }
 
@@ -250,7 +250,7 @@ function Test-Relink {
     Section 'relink a junction pointing elsewhere'
     $name = (Get-RepoSkill | Select-Object -First 1).Name
     $elsewhere = Set-JunctionElsewhere $name
-    Assert-Reported (Invoke-Chezmoi apply) "relink\s+$name"
+    Assert-Reported (Invoke-Chezmoi apply) "relink\s+$name \(was -> $([regex]::Escape($elsewhere))\)"
     Assert-Junction $name
     if (-not (Test-Path (Join-Path $elsewhere 'SKILL.md'))) { Fail 'relink damaged the old target' }
 }

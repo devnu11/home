@@ -19,6 +19,10 @@ if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | 
 # Remove-Item prompts on a junction to a non-empty directory; this never does.
 function Remove-Junction([string]$path) { [IO.Directory]::Delete($path, $false) }
 
+# Where the junction at $path points, for logging before it is removed: the
+# log is all that's left to recreate a replaced link by hand.
+function Get-JunctionTarget([string]$path) { @((Get-Item -LiteralPath $path -Force).Target)[0] }
+
 # Skill directories in the repo: those holding a SKILL.md.
 function Get-Skill {
     Get-ChildItem -Path $repo -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
@@ -39,7 +43,10 @@ function Sync-Skill([IO.DirectoryInfo]$skill) {
     switch (Get-LinkState $skill $target) {
         'Current' { Write-Host "ok       $($skill.Name)"; return }
         'Blocked' { Write-Warning "SKIP     $($skill.Name) (exists and is not a junction)"; return }
-        'Stale'   { Remove-Junction $target; Write-Host "relink   $($skill.Name)" }
+        'Stale'   {
+            Write-Host "relink   $($skill.Name) (was -> $(Get-JunctionTarget $target))"
+            Remove-Junction $target
+        }
         'Missing' { Write-Host "link     $($skill.Name)" }
     }
     New-Item -ItemType Junction -Path $target -Target $skill.FullName | Out-Null
@@ -54,7 +61,7 @@ function Test-Orphan([IO.DirectoryInfo]$item, [string[]]$names) {
 function Remove-Orphan([string[]]$names) {
     foreach ($item in Get-ChildItem -Path $dest -Directory -Force) {
         if (-not (Test-Orphan $item $names)) { continue }
-        Write-Host "prune    $($item.Name)"
+        Write-Host "prune    $($item.Name) (was -> $(Get-JunctionTarget $item.FullName))"
         Remove-Junction $item.FullName
     }
 }
