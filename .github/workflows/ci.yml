@@ -23,7 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
-        run: shellcheck -s sh tests/*.sh
+        run: shellcheck -s sh tests/*.sh private_dot_claude/hooks/*.sh
+      - name: chezmoi guard hook
+        run: sh tests/claude_guard_test.sh
 
   # Bootstrap into a scratch home and check the result; see tests/apply_test.sh.
   apply-unix:

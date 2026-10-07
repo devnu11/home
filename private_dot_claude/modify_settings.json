@@ -1,0 +1,30 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+  Registers ~/.claude/hooks/chezmoi-guard.sh as a PreToolUse hook in
+  ~/.claude/settings.json without owning the file: Claude Code writes its own
+  settings there (model, effort, "always allow" rules), so only our hook entry
+  is replaced and everything else is kept. Any older entry for the guard is
+  dropped first, so applies never duplicate it.
+
+  The hook runs through `sh`, so it works under Git Bash on Windows (Claude
+  Code's default hook shell there) without an executable bit.
+*/ -}}
+{{- $command := `sh "$HOME/.claude/hooks/chezmoi-guard.sh"` -}}
+{{- $guard := dict "matcher" "Bash|PowerShell" "hooks" (list (dict "type" "command" "command" $command "timeout" 10)) -}}
+
+{{- $settings := dict -}}
+{{- if trim .chezmoi.stdin -}}
+{{-   $settings = fromJson .chezmoi.stdin -}}
+{{- end -}}
+{{- $hooks := get $settings "hooks" | default dict -}}
+
+{{- $kept := list -}}
+{{- range get $hooks "PreToolUse" | default list -}}
+{{-   if not (contains "chezmoi-guard.sh" (toJson .)) -}}
+{{-     $kept = append $kept . -}}
+{{-   end -}}
+{{- end -}}
+
+{{- $_ := set $hooks "PreToolUse" (append $kept $guard) -}}
+{{- $_ = set $settings "hooks" $hooks -}}
+{{ toPrettyJson "  " $settings }}
