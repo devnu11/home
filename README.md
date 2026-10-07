@@ -43,6 +43,8 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo; see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
+| `dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
+| `run_onchange_after_enable-karabiner-rules.sh.tmpl` | — | Turns those rules on in Karabiner's selected profile |
 
 `.chezmoiignore` keeps `README.md` and `handy/` out of `~`, skips the PowerShell
 profile off Windows, skips `.zshrc`/`.zprofile`/`.zshenv` on Windows, and leaves
@@ -110,6 +112,28 @@ does not uninstall anything.
 
 Chocolatey needs an elevated shell; from a normal one the install fails and the
 next apply retries. `HOME_PACKAGES=skip` turns the step off (the tests use it).
+
+## Karabiner-Elements (macOS)
+
+The `karabiner-elements` cask comes from the package list. Rules live in
+`dot_config/karabiner/assets/complex_modifications/`, and
+`run_onchange_after_enable-karabiner-rules.sh.tmpl` turns each one on in
+Karabiner's selected profile. Karabiner rewrites `karabiner.json` from its own
+UI, so the script patches that file with `jq` (shipped with macOS) rather than
+chezmoi owning it. A rule replaces any rule with the same description, and
+rules added in the UI are kept.
+
+To add a rule, drop its JSON in that directory and add its filename to the
+`$rules` list at the top of the script.
+
+Shipped rules:
+
+- `windows-app-cmd-tab.json`: in Windows App (Microsoft Remote Desktop),
+  Cmd+Tab sends Alt+Tab, and Cmd+Shift+Tab sends Alt+Shift+Tab, so window
+  switching happens on the remote machine.
+
+On first install, macOS still needs you to approve Karabiner's system
+extension and grant Input Monitoring by hand, in System Settings.
 
 ## Windows tools
 
