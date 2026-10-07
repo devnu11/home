@@ -1,0 +1,8 @@
+# Managed by chezmoi. Generated from .chezmoidata/aliases.yaml; add aliases
+# there, not here. Sourced from interactive.sh.
+{{ range $name, $alias := .aliases -}}
+{{   $command := includeTemplate "alias-command" (dict "alias" $alias "shell" "sh") -}}
+{{   if $command -}}
+alias {{ $name }}={{ $command | squote }}
+{{   end -}}
+{{ end -}}

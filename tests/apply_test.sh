@@ -76,7 +76,7 @@ have() {
 
 # --- expectations -------------------------------------------------------
 
-MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/lamaison.sh .bashrc .bash_profile
+MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell/lamaison.sh .bashrc .bash_profile
 .zshenv .zprofile .zshrc .claude/CLAUDE.md .claude/hooks/chezmoi-guard.sh .claude/settings.json'
 
 # Source-dir furniture and Windows-only files stay out of ~.

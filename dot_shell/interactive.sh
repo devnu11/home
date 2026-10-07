@@ -130,7 +130,6 @@ PS2="${__P_OPEN}${COLOR_DARKGRAY}${__P_CLOSE}>${__P_OPEN}${COLOR_NOCOLOR}${__P_C
 PS3='Please enter a number from above list: '
 
 alias cls="clear"
-alias mkd="mkdir -p"
 alias less="less -R"
 alias diskusage="du -sh * | sort -h -r | less"
 alias py="python3"
@@ -151,8 +150,6 @@ else
 fi
 
 alias l="ls -al --color"
-alias ll='ls -l --color=auto'
-alias la='ls -al'
 alias lf='ls -F'
 alias lr='ls -lRh'
 
@@ -167,40 +164,12 @@ alias ffl='find -L . -type f -name'
 alias flf='ffl'
 alias fld='fdl'
 
-#typo aliases
+#typo aliases (the rest are in aliases.sh)
 alias cls='clear'
-alias kk='ll'
-alias xs='cd'
-alias vf='cd'
-alias moer='more'
-alias moew='more'
 
-# one letter aliases
-alias h='history'
-alias g='git'
-alias m='more'
-alias c='cat'
-alias h='head'
-alias t='tail'
-
-# Git aliases
-alias gs='git status'
-alias gsl='git sl'
-alias gl='git l'
-alias ga='git add'
-alias gc='git commit'
-alias gcm='git commit -m'
-alias gca='git commit -a'
-alias gcam='git commit -a -m'
-alias gcadd='git commit --amend'
-alias gd='git diff'
-alias gf='git fetch'
-alias gadd='git add'
-alias gad='git add'
-alias gp='git pick'
-alias gri='git ri'
-alias gpr='git pr'
-alias grc='git rebase --continue'
+# Abbreviations shared with PowerShell and cmd.exe (git, cd .., ll, h, ...),
+# generated from .chezmoidata/aliases.yaml.
+[ -f "$HOME/.shell/aliases.sh" ] && . "$HOME/.shell/aliases.sh"
 
 # List subdirectories by total size, largest first.
 # `sort -h` is in both GNU and BSD sort; the original used GNU-only `xargs -d`.
@@ -334,23 +303,10 @@ alias multitail='multitail --no-repeat -c'
 #alias svi='sudo vi'
 #alias vis='vim "+set si"'
 
-# Change directory aliases
-alias home='cd ~'
-alias cd-='cd "$OLDPWD"'
-alias cd..='cd ..'
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-alias .....='cd ../../../..'
-
-# cd into the old directory
-alias bd='cd "$OLDPWD"'
-
 # Remove a directory and all files
 alias rmd='/bin/rm -rfv '
 
 # Alias's for multiple directory listing commands
-alias la='ls -Alh' # show hidden files
 alias lx='ls -lXBh' # sort by extension
 alias lk='ls -lSrh' # sort by size
 alias lc='ls -lcrh' # sort by change time
@@ -359,7 +315,6 @@ alias lr='ls -lRh' # recursive ls
 alias lt='ls -ltrh' # sort by date
 alias lm='ls -alh |more' # pipe through 'more'
 alias lw='ls -xAh' # wide listing format
-alias ll='ls -Fls' # long listing format
 alias labc='ls -lap' #alphabetical sort
 alias lf="ls -l | egrep -v '^d'" # files only
 alias ldir="ls -l | egrep '^d'" # directories only
@@ -372,11 +327,7 @@ alias 666='chmod -R 666'
 alias 755='chmod -R 755'
 alias 777='chmod -R 777'
 
-# Search command line history
-alias h="history | grep "
-
-# Search running processes
-alias p="ps aux | grep "
+# Top processes by CPU (h and p, the history and process search, are in aliases.sh)
 alias topcpu="/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"
 
 # Search files in the current folder

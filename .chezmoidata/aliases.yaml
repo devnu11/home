@@ -1,0 +1,64 @@
+# Command abbreviations shared by every shell. Each one expands to its command
+# followed by whatever arguments were typed, in:
+#   sh    - bash and zsh (~/.shell/aliases.sh, sourced by interactive.sh)
+#   pwsh  - PowerShell 7 and Windows PowerShell 5.1 (the PowerShell profile)
+#   cmd   - cmd.exe, as doskey macros (~/.config/cmd/aliases.doskey)
+#
+# A plain string is the same command in all three. A map lists only the shells
+# the alias exists in, so leaving a shell out skips it there. In cmd, `$B` is a
+# pipe. Values must not contain a single quote.
+#
+# In PowerShell these win over built-in aliases of the same name (gc, gl, gp,
+# gcm, h). Aliases whose point is a Unix flag (cp -i, rm -iv, ls -F, ps auxf)
+# stay Unix-only in interactive.sh, so PowerShell's rm/cp/mv/ls/ps are left alone.
+# Logic that isn't a plain prefix (path, up, mcd, extract, ...) is a function
+# written per shell.
+aliases:
+  # --- git -------------------------------------------------------------
+  g: git
+  ga: git add
+  gad: git add
+  gadd: git add
+  gc: git commit
+  gca: git commit -a
+  gcadd: git commit --amend
+  gcam: git commit -a -m
+  gcm: git commit -m
+  gd: git diff
+  gf: git fetch
+  gl: git l
+  gp: git pick
+  gpr: git pr
+  gri: git ri
+  grc: git rebase --continue
+  gs: git status
+  gsl: git sl
+
+  # --- directories -----------------------------------------------------
+  "..": {sh: cd .., pwsh: Set-Location .., cmd: cd ..}
+  "...": {sh: cd ../.., pwsh: Set-Location ../.., cmd: cd ..\..}
+  "....": {sh: cd ../../.., pwsh: Set-Location ../../.., cmd: cd ..\..\..}
+  ".....": {sh: cd ../../../.., pwsh: Set-Location ../../../.., cmd: cd ..\..\..\..}
+  "cd..": {sh: cd .., pwsh: Set-Location ..}
+  home: {sh: cd ~, pwsh: Set-Location ~, cmd: cd /d %USERPROFILE%}
+  bd: {sh: cd "$OLDPWD", pwsh: Set-Location -}
+  "cd-": {sh: cd "$OLDPWD", pwsh: Set-Location -}
+  xs: {sh: cd, pwsh: Set-Location, cmd: cd}
+  vf: {sh: cd, pwsh: Set-Location, cmd: cd}
+  mkd: {sh: mkdir -p, pwsh: mkdir, cmd: mkdir}
+
+  # --- listing ---------------------------------------------------------
+  ll: {sh: ls -Fls, pwsh: Get-ChildItem, cmd: dir}
+  la: {sh: ls -Alh, pwsh: Get-ChildItem -Force, cmd: dir /a}
+  kk: ll
+
+  # --- files -----------------------------------------------------------
+  c: {sh: cat, pwsh: Get-Content, cmd: type}
+  m: more
+  moer: more
+  moew: more
+  t: {sh: tail, pwsh: Get-Content -Tail 10}
+
+  # --- search history and processes ------------------------------------
+  h: {sh: "history | grep ", pwsh: Get-History | Select-String, cmd: doskey /history $B findstr /i}
+  p: {sh: "ps aux | grep ", pwsh: Get-Process | Out-String -Stream | Select-String, cmd: tasklist $B findstr /i}
