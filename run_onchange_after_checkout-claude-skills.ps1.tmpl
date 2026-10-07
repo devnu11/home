@@ -2,11 +2,14 @@
 # Check out the pinned claude-skills commit. Reruns when the pin changes.
 # Runs before run_after_link-claude-skills (scripts run in name order).
 # A clone with uncommitted changes makes checkout fail, which keeps them.
+# Already at the pin (e.g. on main right after merging it): leave the branch
+# checked out rather than detaching, so working in the clone stays easy.
 
 $repo = Join-Path '{{ .chezmoi.destDir }}' 'code\claude-skills'
 $pin = '{{ .claudeSkills.commit }}'
 
 if (-not (Test-Path (Join-Path $repo '.git'))) { exit 0 }
+if ((git -C $repo rev-parse HEAD 2>$null) -eq $pin) { Write-Host "claude-skills: already at $pin"; exit 0 }
 git -C $repo cat-file -e "$pin^{commit}" 2>$null
 if ($LASTEXITCODE -ne 0) { git -C $repo fetch --quiet origin; if ($LASTEXITCODE -ne 0) { exit 1 } }
 git -C $repo checkout --quiet --detach $pin
