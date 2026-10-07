@@ -1,0 +1,207 @@
+# Managed by chezmoi. Edit the source: `chezmoi edit $PROFILE`
+# Windows only - see .chezmoiignore. The PowerShell counterpart of env.sh plus
+# interactive.sh. Windows PowerShell 5.1 loads it too (via the stub in
+# Documents\WindowsPowerShell), so it sticks to 5.1 syntax (no ?? ?: && or `e)
+# and to ASCII: 5.1 reads a BOM-less UTF-8 file as the ANSI code page.
+
+# --- PATH ---------------------------------------------------------------
+# Remove-then-prepend, as in env.sh, so entries never pile up in nested shells.
+# ~/.local/bin is where `uv tool install` puts entry points (handy).
+function Add-PathFront([string]$dir) {
+    if (-not (Test-Path $dir)) { return }
+    $rest = $env:PATH -split ';' | Where-Object { $_ -and $_ -ne $dir }
+    $env:PATH = (@($dir) + $rest) -join ';'
+}
+Add-PathFront (Join-Path $HOME 'bin')
+Add-PathFront (Join-Path $HOME '.local\bin')
+
+# --- Editor / pager -----------------------------------------------------
+$env:EDITOR = 'notepad'
+foreach ($editor in 'nano', 'nvim', 'vim') {
+    if (Get-Command $editor -CommandType Application -ErrorAction Ignore) { $env:EDITOR = $editor; break }
+}
+$env:VISUAL = $env:EDITOR
+if (Get-Command less -CommandType Application -ErrorAction Ignore) {
+    $env:PAGER = 'less'
+    $env:LESS = '-FR'
+}
+
+# --- History ------------------------------------------------------------
+# Like bash's HISTCONTROL=ignoreboth: no duplicates, and a command typed with a
+# leading space is kept out of the history file.
+if (Get-Module PSReadLine) {
+    Set-PSReadLineOption -MaximumHistoryCount 50000 -HistoryNoDuplicates
+    Set-PSReadLineOption -AddToHistoryHandler { param($line) -not $line.StartsWith(' ') }
+}
+
+# --- Aliases ------------------------------------------------------------
+# Generated from .chezmoidata/aliases.yaml, shared with bash, zsh and cmd.exe.
+# Each is a function so it can take arguments. Aliases beat functions, so a
+# built-in alias of the same name (gc, gl, gp, gcm, h) is removed first.
+# Written out as plain definitions: a Function: provider path would read
+# names like `..` as a parent directory.
+{{- $names := list }}
+{{- range $name, $alias := .aliases }}
+{{-   if includeTemplate "alias-command" (dict "alias" $alias "shell" "pwsh") }}
+{{-     $names = append $names (printf "'%s'" $name) }}
+{{-   end }}
+{{- end }}
+foreach ($name in {{ join ", " $names }}) {
+    if (Get-Alias $name -ErrorAction Ignore) { Remove-Item "Alias:$name" -Force }
+}
+{{- range $name, $alias := .aliases }}
+{{-   $command := includeTemplate "alias-command" (dict "alias" $alias "shell" "pwsh") }}
+{{-   if $command }}
+function {{ $name }} { {{ $command }} @args }
+{{-   end }}
+{{- end }}
+
+# --- Functions ----------------------------------------------------------
+# One PATH entry per line.
+function path { $env:PATH -split ';' }
+
+# Go up $count directories (up 3 == cd ../../..).
+function up([int]$count = 1) {
+    Set-Location (('..' + [IO.Path]::DirectorySeparatorChar) * [Math]::Max($count, 1))
+}
+
+# Create a directory (and its parents) and go into it.
+function mkdirg([string]$dir) {
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    Set-Location $dir
+}
+Set-Alias mcd mkdirg
+
+# No args: popd. One: pushd. More: pushd, run the rest as a command, popd.
+function pd {
+    if ($args.Count -eq 0) { Pop-Location; return }
+    Push-Location $args[0]
+    if ($args.Count -eq 1) { return }
+    try { & $args[1] @($args | Select-Object -Skip 2) } finally { Pop-Location }
+}
+
+# Extract archives with Windows' bsdtar, which reads zip, tar, gz, bz2 and 7z.
+function extract {
+    foreach ($archive in $args) {
+        if (Test-Path $archive -PathType Leaf) { tar -xvf $archive }
+        else { Write-Warning "'$archive' is not a valid file!" }
+    }
+}
+
+# Search the text of every file below here (case-insensitive regex).
+function ftext([string]$pattern) {
+    Get-ChildItem -Recurse -File -ErrorAction SilentlyContinue | Select-String -Pattern $pattern
+}
+
+# List subdirectories by total size, largest first.
+function lsd {
+    Get-ChildItem -Directory | ForEach-Object {
+        $bytes = (Get-ChildItem $_.FullName -Recurse -File -ErrorAction SilentlyContinue |
+                  Measure-Object -Property Length -Sum).Sum
+        [pscustomobject]@{
+            Size = '{0,8:N1} MB' -f ($bytes / 1MB)
+            Name = $_.Name
+        }
+    } | Sort-Object { [double]($_.Size -replace '[^\d.]') } -Descending
+}
+
+# --- ssh ----------------------------------------------------------------
+# As in interactive.sh: bare `ssh` goes to the default host, and a bare number
+# becomes a host through the printf pattern (only %d and %0Nd are supported).
+$LamaisonSshDefaultHost = '{{ .lamaisonSshDefaultHost | replace "'" "''" }}'
+$LamaisonSshHostExpression = '{{ .lamaisonSshHostExpression | replace "'" "''" }}'
+
+function Format-SshHost([string]$number) {
+    [regex]::Replace($LamaisonSshHostExpression, '%(0?)(\d*)d', {
+        param($m)
+        $width = if ($m.Groups[2].Value) { [int]$m.Groups[2].Value } else { 0 }
+        $number.PadLeft($width, $(if ($m.Groups[1].Value) { '0' } else { ' ' }))
+    })
+}
+
+function ssh {
+    $target = $args
+    if ($args.Count -eq 0) {
+        Write-Host 'Usage: ssh <user@host> [command]'
+        if (-not $LamaisonSshDefaultHost) { return }
+        $target = @($LamaisonSshDefaultHost)
+    } elseif ($args.Count -eq 1 -and "$($args[0])" -match '^\d+$' -and $LamaisonSshHostExpression) {
+        $target = @(Format-SshHost "$($args[0])")
+    }
+    ssh.exe @target
+}
+
+# --- Prompt -------------------------------------------------------------
+# Same layout and colours as interactive.sh:  status [user@host:dir]
+$LamaisonUser = '{{ .lamaisonDefaultUsername | replace "'" "''" }}'
+$LamaisonHost = '{{ .lamaisonDefaultHostname | replace "'" "''" }}'
+$LamaisonPwdBlue = '{{ .lamaisonPs1PwdBlue | replace "'" "''" }}'
+$LamaisonPwdCyan = '{{ .lamaisonPs1PwdCyan | replace "'" "''" }}'
+
+$PromptColor = @{
+    Green = "$([char]27)[0;32m"; Red = "$([char]27)[0;31m"; Blue = "$([char]27)[0;34m"
+    Cyan = "$([char]27)[0;36m"; Magenta = "$([char]27)[0;35m"; DarkGray = "$([char]27)[1;30m"
+    None = "$([char]27)[0m"
+}
+$PromptEmoji = @{ Ok = [char]::ConvertFromUtf32(0x1F44D); Fail = [char]::ConvertFromUtf32(0x1F621) }
+$PromptIsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).
+    IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+# A prompt directory setting as a full path: ~ expanded, no trailing separator.
+function ConvertTo-PromptDir([string]$dir) {
+    if (-not $dir) { return '' }
+    ($dir -replace '^~(?=$|[\\/])', $HOME -replace '/', '\').TrimEnd('\')
+}
+$PromptDirBlue = ConvertTo-PromptDir $LamaisonPwdBlue
+$PromptDirCyan = ConvertTo-PromptDir $LamaisonPwdCyan
+
+# True when $here is $dir or below it; always false for an empty $dir.
+function Test-PathUnder([string]$here, [string]$dir) {
+    if (-not $dir) { return $false }
+    "$here\".StartsWith("$dir\", [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Format-PromptStatus([bool]$ok, [int]$code) {
+    if ($ok) { return "$($PromptColor.Green)$($PromptEmoji.Ok) 000" }
+    "$($PromptColor.Red)$($PromptEmoji.Fail) $('{0:D3}' -f $(if ($code) { $code } else { 1 }))"
+}
+
+function Format-PromptUser {
+    if ($env:USERNAME -in @($LamaisonUser, 'devans', 'd.evans', 'dave', 'djevans')) {
+        return "$($PromptColor.DarkGray)me"
+    }
+    $color = if ($PromptIsAdmin) { $PromptColor.Red } else { $PromptColor.Magenta }
+    "$color$env:USERNAME"
+}
+
+# Hostnames are compared without their domain and case.
+function Format-PromptHost {
+    $name = "$env:COMPUTERNAME".ToLower()
+    $color = switch ($name) {
+        ($LamaisonHost -split '\.')[0].ToLower() { $PromptColor.DarkGray; break }
+        'homeassistant' { $PromptColor.Magenta; break }
+        default { $PromptColor.Red }
+    }
+    "$color@$name"
+}
+
+function Format-PromptDir([string]$here) {
+    $color = $PromptColor.Red
+    if (Test-PathUnder $here $PromptDirBlue) { $color = $PromptColor.Blue }
+    elseif (Test-PathUnder $here $PromptDirCyan) { $color = $PromptColor.Cyan }
+    elseif (Test-PathUnder $here $HOME) { $color = $PromptColor.Green }
+    $leaf = if ($here -eq $HOME) { '~' } else { Split-Path $here -Leaf }
+    "$($PromptColor.DarkGray):$color$(if ($leaf) { $leaf } else { $here })"
+}
+
+function prompt {
+    $ok = $? # Must come first!
+    $here = $ExecutionContext.SessionState.Path.CurrentLocation.ProviderPath
+    $parts = (Format-PromptStatus $ok $global:LASTEXITCODE), "$($PromptColor.None) [",
+        (Format-PromptUser), (Format-PromptHost), (Format-PromptDir $here), "$($PromptColor.None)] "
+    -join $parts
+}
+
+# Machine-local additions. Not tracked in the dotfiles repo.
+$localProfile = Join-Path (Split-Path $PROFILE) 'local.ps1'
+if (Test-Path $localProfile) { . $localProfile }

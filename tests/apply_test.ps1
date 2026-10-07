@@ -41,10 +41,17 @@ $FakeEnv = [ordered]@{
 
 $Managed = '.gitconfig', '.shell\env.sh', '.shell\aliases.sh', '.shell\lamaison.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
            '.claude\hooks\chezmoi-guard.sh', '.claude\settings.json',
-           'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+           'Documents\PowerShell\Microsoft.PowerShell_profile.ps1',
+           'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.
 $Unmanaged = '.zshrc', '.zprofile', '.zshenv', 'README.md', 'LICENSE', 'handy', 'tests', '.github'
+
+# PowerShell executable -> the profile it loads, relative to the scratch home.
+$ProfileShells = [ordered]@{
+    pwsh       = 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
+    powershell = 'Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1'
+}
 
 # What install-packages must pass to choco (from .chezmoidata/packages.yaml).
 $ChocoPackages = 'beyondcompare', 'unxutils'
@@ -273,12 +280,17 @@ function Test-Handy {
     if ($LASTEXITCODE -ne 0) { Fail "handy --help: exit $LASTEXITCODE" }
 }
 
+# Load the applied profile in each PowerShell, as a real session would, and run
+# tests\profile_probe.ps1 inside it.
 function Test-PowerShellProfile {
-    Section 'PowerShell profile'
-    $profilePath = Join-Path $FakeHome 'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
-    $probe = ". '$profilePath'; if (-not (Get-Alias g -ErrorAction SilentlyContinue)) { exit 1 }"
-    & pwsh -NoProfile -NonInteractive -Command $probe
-    if ($LASTEXITCODE -ne 0) { Fail "profile failed to load: exit $LASTEXITCODE" }
+    Section 'PowerShell profiles'
+    foreach ($shell in $ProfileShells.Keys) {
+        if (-not (Get-Command $shell -ErrorAction SilentlyContinue)) { Write-Host "    skip: $shell not installed"; continue }
+        $profilePath = Join-Path $FakeHome $ProfileShells[$shell]
+        $probe = ". '$profilePath'; . '$(Join-Path $PSScriptRoot 'profile_probe.ps1')'"
+        & $shell -NoLogo -NoProfile -NonInteractive -Command $probe
+        if ($LASTEXITCODE -ne 0) { Fail "${shell}: $LASTEXITCODE profile check(s) failed" }
+    }
 }
 
 # --- main ---------------------------------------------------------------
