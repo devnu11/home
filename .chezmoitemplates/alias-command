@@ -1,0 +1,7 @@
+{{- /* The command alias .alias expands to in shell .shell (sh, pwsh or cmd),
+       or nothing when it doesn't exist there. See .chezmoidata/aliases.yaml. */ -}}
+{{- if kindIs "string" .alias -}}
+{{-   .alias -}}
+{{- else -}}
+{{-   get .alias .shell -}}
+{{- end -}}
