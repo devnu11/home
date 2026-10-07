@@ -34,7 +34,7 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `dot_shell/env.sh` | `~/.shell/env.sh` | PATH, EDITOR, PAGER, GPG_TTY — every shell, including cron |
 | `dot_shell/interactive.sh` | `~/.shell/interactive.sh` | History, aliases, `lsd` — interactive shells only |
 | `dot_zshenv` | `~/.zshenv` | Read by every zsh; sources `env.sh` |
-| `dot_zprofile` | `~/.zprofile` | Login zsh: Homebrew (Apple Silicon/Intel/Linux), then re-sources `env.sh` |
+| `dot_zprofile` | `~/.zprofile` | Login zsh: re-sources `env.sh` after macOS `path_helper` |
 | `dot_zshrc` | `~/.zshrc` | Interactive zsh: `interactive.sh`, then `~/.zshrc.local` |
 | `dot_bash_profile` | `~/.bash_profile` | Login bash: `env.sh`, then `.bashrc` |
 | `dot_bashrc` | `~/.bashrc` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
@@ -58,14 +58,23 @@ there is invisible to scripts, `ssh host cmd`, and cron — which matters here,
 because `handy jira-report` is meant to run from cron.
 
 So environment lives in `env.sh`, sourced from `~/.zshenv` (every zsh) and from
-both bash rc files: `PATH` (prepends `~/bin` and `~/.local/bin`), `EDITOR`/
+both bash rc files: `PATH` (prepends `~/bin` and `~/.local/bin`, appends
+Homebrew), `EDITOR`/
 `VISUAL` (nano, else nvim, vim, vi), `PAGER`/`LESS`, and `GPG_TTY` for signed
 commits. Aliases, history and other interactive-only settings live in
 `interactive.sh`.
 
-`env.sh` removes a PATH entry before prepending it, so order survives macOS
+`env.sh` removes a PATH entry before adding it, so order survives macOS
 `/usr/libexec/path_helper` (which reshuffles PATH in `/etc/zprofile`, after
 `~/.zshenv` has run) and entries never pile up in nested shells.
+
+Homebrew goes *after* the system directories, not before them as
+`brew shellenv` would put it. The system directories are root-owned and
+Homebrew's are user-writable, so a rogue formula or cask could otherwise ship
+its own `sudo` or `ssh` and harvest credentials. The cost: where both exist,
+the system copy wins (`python3`, `openssl`, `pip3`); reach brew's with
+`$HOMEBREW_PREFIX/bin/<tool>`. On Intel Macs Homebrew lives in `/usr/local`,
+which macOS's own `/etc/paths` already puts ahead of `/usr/bin`.
 
 ### Server watchdog
 
