@@ -38,7 +38,11 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `dot_zshrc` | `~/.zshrc` | Interactive zsh: `interactive.sh`, then `~/.zshrc.local` |
 | `dot_bash_profile` | `~/.bash_profile` | Login bash: `env.sh`, then `.bashrc` |
 | `dot_bashrc` | `~/.bashrc` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
-| `Documents/PowerShell/Microsoft.PowerShell_profile.ps1` | `$PROFILE` | Windows only |
+| `Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` | `$PROFILE` | Windows only; aliases, helpers and prompt, see below |
+| `Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1` | 5.1's `$PROFILE` | Loads the one above, so Windows PowerShell matches |
+| `dot_cmdrc.cmd.tmpl`, `private_dot_config/cmd/` | `~/.cmdrc.cmd`, `~/.config/cmd/` | Windows only; cmd.exe aliases and prompt |
+| `AppData/Local/Microsoft/Windows Terminal/Fragments/home/cmd.json` | Terminal fragment | Adds the "Command Prompt (home)" profile |
+| `.chezmoidata/aliases.yaml` | — | Aliases shared by bash, zsh, PowerShell and cmd.exe |
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
 | `private_dot_claude/hooks/chezmoi-guard.sh` | `~/.claude/hooks/chezmoi-guard.sh` | Claude Code hook: sessions must ask before `chezmoi apply` and friends; see below |
 | `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
@@ -88,6 +92,28 @@ prompt, skips even starting Python if it ran in the last 10 minutes and the
 config hasn't changed since, and logs to `~/.local/state/handy-servers/hook.log`.
 `HANDY_SERVERS_DISABLE=1` turns it off.
 
+## Same aliases in every shell
+
+Abbreviations that make sense everywhere (the git ones, `..`, `ll`, `h`, `p`,
+...) live once in [`.chezmoidata/aliases.yaml`](.chezmoidata/aliases.yaml).
+Add one there and the next apply puts it in bash and zsh (`~/.shell/aliases.sh`),
+PowerShell (a function per alias) and cmd.exe (a doskey macro). An entry can
+give a different command per shell, or leave a shell out.
+
+- **PowerShell** (7, and 5.1 through a stub) also gets env.sh's PATH, editor
+  and pager settings, bash-style history, the `path`, `up`, `mkdirg`/`mcd`,
+  `pd`, `extract`, `ftext`, `lsd` and `ssh` helpers, and the same
+  `status [user@host:dir]` prompt. Your aliases replace PowerShell's built-in
+  ones of the same name (`gc`, `gl`, `gp`, `gcm`, `h`); `rm`, `cp`, `mv`, `ls`
+  and `ps` stay PowerShell's, since their Unix versions only add Unix flags.
+- **cmd.exe** has no rc file, so a Windows Terminal profile, "Command Prompt
+  (home)", runs `cmd /k ~/.cmdrc.cmd`. It is not registered as AutoRun, so
+  scripts, build tools and `cmd /c` never load it. Its prompt can't show the
+  last exit status or colour by directory.
+
+Unix-only aliases and functions (the `ls`/`find`/`chmod`/`tar` families and so
+on) stay in `interactive.sh`.
+
 ## Per-machine and corporate overrides
 
 None of these are tracked. Create whichever a machine needs:
@@ -98,6 +124,7 @@ None of these are tracked. Create whichever a machine needs:
 | `~/.bashrc.local`, `~/.zshrc.local` | PATH entries, proxies, work aliases |
 | `~/.zprofile.local` | Login-shell setup specific to the machine |
 | `local.ps1` beside `$PROFILE` | Same, for PowerShell |
+| `~/.cmdrc.local.cmd` | Same, for cmd.exe |
 | `~/.claude/CLAUDE.local.md` | Claude instructions that only apply on this machine |
 
 A work laptop typically needs only `~/.gitconfig.local`:
@@ -268,7 +295,10 @@ junctions on Windows), that `handy` is runnable when `uv` is installed, and that
 a second `apply` changes nothing. The Unix test also starts bash and zsh as
 plain, login and interactive shells and checks `~/.local/bin` heads PATH. The
 Windows test additionally drives the junction script through adding, removing
-and relinking a skill, and loads the PowerShell profile.
+and relinking a skill, loads the profile in both PowerShell 7 and Windows
+PowerShell 5.1 and runs `tests/profile_probe.ps1` inside, runs `~/.cmdrc.cmd`
+under cmd.exe and checks its macros and prompt, and validates the Terminal
+fragment.
 
 They need chezmoi, git, the `handy` submodule, and network access to clone
 claude-skills. CI runs them on Ubuntu, macOS and Windows for every push and pull
