@@ -5,24 +5,51 @@
 # Interactive-only things (aliases, history, prompt) belong in interactive.sh.
 
 # --- PATH ---------------------------------------------------------------
-# Remove-then-prepend, so the order is right even after macOS /usr/libexec/
+# Remove-then-add, so the order is right even after macOS /usr/libexec/
 # path_helper has reshuffled PATH, and entries never accumulate in nested
 # shells. ~/.local/bin is where `uv tool install` puts entry points (handy).
+_path_remove() {
+	case ":$PATH:" in
+		*":$1:"*) ;;
+		*) return 0 ;;
+	esac
+	PATH=":$PATH:"
+	PATH="${PATH%%":$1:"*}:${PATH#*":$1:"}"
+	PATH="${PATH#:}"
+	PATH="${PATH%:}"
+}
 _path_prepend() {
 	[ -d "$1" ] || return 0
-	case ":$PATH:" in
-		*":$1:"*)
-			PATH=":$PATH:"
-			PATH="${PATH%%":$1:"*}:${PATH#*":$1:"}"
-			PATH="${PATH#:}"
-			PATH="${PATH%:}"
-			;;
-	esac
-	PATH="$1:$PATH"
+	_path_remove "$1"
+	PATH="$1${PATH:+:$PATH}"
 }
+_path_append() {
+	[ -d "$1" ] || return 0
+	_path_remove "$1"
+	PATH="${PATH:+$PATH:}$1"
+}
+
+# Homebrew: Apple Silicon, Intel macOS, Linuxbrew. It goes AFTER the system
+# directories: they are root-owned, Homebrew's are user-writable, so a rogue
+# formula or cask could otherwise shadow sudo, ssh or login and harvest
+# credentials. System copies win (python3, openssl, ...); call brew's by full
+# path or `$HOMEBREW_PREFIX/bin/...` when needed. Done here rather than with
+# `brew shellenv`, which prepends, so every shell (bash, cron, `ssh host cmd`)
+# gets it without a subprocess. On Intel Macs /usr/local/bin is already
+# ahead of /usr/bin via /etc/paths; that is macOS's ordering, not ours.
+for _brew in /opt/homebrew /usr/local /home/linuxbrew/.linuxbrew; do
+	if [ -x "$_brew/bin/brew" ]; then
+		_path_append "$_brew/bin"
+		_path_append "$_brew/sbin"
+		export HOMEBREW_PREFIX="$_brew"
+		break
+	fi
+done
+unset _brew
+
 _path_prepend "$HOME/bin"
 _path_prepend "$HOME/.local/bin"
-unset -f _path_prepend
+unset -f _path_remove _path_prepend _path_append
 export PATH
 
 # --- Editor / pager -----------------------------------------------------
