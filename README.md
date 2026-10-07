@@ -45,7 +45,7 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo; see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
-| `dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
+| `private_dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
 | `run_onchange_after_enable-karabiner-rules.sh.tmpl` | — | Turns those rules on in Karabiner's selected profile |
 
 `.chezmoiignore` keeps `README.md` and `handy/` out of `~`, skips the PowerShell
@@ -147,7 +147,7 @@ next apply retries. `HOME_PACKAGES=skip` turns the step off (the tests use it).
 ## Karabiner-Elements (macOS)
 
 The `karabiner-elements` cask comes from the package list. Rules live in
-`dot_config/karabiner/assets/complex_modifications/`, and
+`private_dot_config/karabiner/assets/complex_modifications/`, and
 `run_onchange_after_enable-karabiner-rules.sh.tmpl` turns each one on in
 Karabiner's selected profile. Karabiner rewrites `karabiner.json` from its own
 UI, so the script patches that file with `jq` (shipped with macOS) rather than
