@@ -27,4 +27,4 @@
 
 {{- $_ := set $hooks "PreToolUse" (append $kept $guard) -}}
 {{- $_ = set $settings "hooks" $hooks -}}
-{{ toPrettyJson "  " $settings }}
+{{ toPrettyJson "  " $settings -}}
