@@ -77,7 +77,7 @@ have() {
 # --- expectations -------------------------------------------------------
 
 MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/lamaison.sh .bashrc .bash_profile
-.zshenv .zprofile .zshrc .claude/CLAUDE.md'
+.zshenv .zprofile .zshrc .claude/CLAUDE.md .claude/hooks/chezmoi-guard.sh .claude/settings.json'
 
 # Source-dir furniture and Windows-only files stay out of ~.
 UNMANAGED='README.md LICENSE handy tests .github Documents'
@@ -87,7 +87,16 @@ GIT_VALUES='user.name=CI Test
 user.email=ci@example.com
 core.autocrlf=input'
 
+# Claude Code's own settings, which modify_settings.json must keep.
+SEED_SETTINGS='{"model": "opus", "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "say done"}]}]}}'
+
 # --- steps --------------------------------------------------------------
+
+# ~/.claude/settings.json as Claude Code would have left it before chezmoi.
+seed_claude_settings() {
+	mkdir -p "$FAKE_HOME/.claude"
+	printf '%s\n' "$SEED_SETTINGS" >"$FAKE_HOME/.claude/settings.json"
+}
 
 bootstrap() {
 	section "init + first apply"
@@ -166,6 +175,15 @@ KARABINER_RULE='Cmd+Tab sends Alt+Tab when Windows App is frontmost'
 
 # On macOS the shipped rule is enabled in karabiner.json exactly once;
 # elsewhere nothing of Karabiner's lands.
+# The guard hook is registered exactly once and the seeded settings survive.
+check_claude_settings() {
+	section "claude settings"
+	settings="$FAKE_HOME/.claude/settings.json"
+	assert_eq "guard entries: $(grep -c 'chezmoi-guard.sh' "$settings")" "guard entries: 1"
+	grep -q '"model": "opus"' "$settings" || fail "settings.json lost the seeded model"
+	grep -q '"say done"' "$settings" || fail "settings.json lost the seeded Stop hook"
+}
+
 check_karabiner() {
 	section "karabiner"
 	if [ "$(uname -s)" != Darwin ]; then
@@ -238,8 +256,10 @@ check_no_script_acted() {
 
 # --- main ---------------------------------------------------------------
 
+seed_claude_settings
 bootstrap
 check_targets
+check_claude_settings
 check_gitconfig
 check_skill_links
 check_packages
@@ -249,6 +269,7 @@ check_shell bash
 check_shell zsh
 check_brew_after_system
 check_idempotent
+check_claude_settings
 check_skill_links
 check_karabiner
 

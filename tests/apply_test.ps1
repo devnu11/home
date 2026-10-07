@@ -40,6 +40,7 @@ $FakeEnv = [ordered]@{
 }
 
 $Managed = '.gitconfig', '.shell\env.sh', '.shell\lamaison.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
+           '.claude\hooks\chezmoi-guard.sh', '.claude\settings.json',
            'Documents\PowerShell\Microsoft.PowerShell_profile.ps1'
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.

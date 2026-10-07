@@ -40,6 +40,8 @@ machine it will replace a pre-existing `~/.gitconfig` silently.
 | `dot_bashrc` | `~/.bashrc` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
 | `Documents/PowerShell/Microsoft.PowerShell_profile.ps1` | `$PROFILE` | Windows only |
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
+| `private_dot_claude/hooks/chezmoi-guard.sh` | `~/.claude/hooks/chezmoi-guard.sh` | Claude Code hook: sessions must ask before `chezmoi apply` and friends; see below |
+| `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
 | `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo; see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
@@ -109,6 +111,26 @@ A work laptop typically needs only `~/.gitconfig.local`:
 
 Anything that varies per machine but is *not* secret can instead become a
 template variable in `.chezmoi.toml.tmpl` and a `{{ .var }}` in the file.
+
+## Claude Code can't write to `~` unasked
+
+Three layers stop any Claude session, on any machine, from running a chezmoi
+command that writes to the home directory without asking:
+
+1. `~/.claude/CLAUDE.md` says so, and requires a full, unfiltered
+   `chezmoi diff` and `chezmoi status` before asking.
+2. `~/.claude/hooks/chezmoi-guard.sh`, a PreToolUse hook, catches `apply`,
+   `update`, `destroy`, `purge` and `init`/`edit --apply`, including wrapped
+   forms (`cd ~ && …`, `env … chezmoi`, `sh -c "…"`). In default, acceptEdits
+   and plan modes it asks you. Claude Code ignores "ask" in auto and
+   bypassPermissions modes, so there it denies, and you run the command
+   yourself.
+3. `modify_settings.json` registers the hook in `~/.claude/settings.json` by
+   merging, since Claude Code rewrites that file. Only the guard's entry is
+   replaced; the first apply re-sorts the file's keys.
+
+The hook only sees commands Claude runs directly; layer 1 forbids hiding one
+in a script file. `sh tests/claude_guard_test.sh` tests the matcher.
 
 ## Packages
 
