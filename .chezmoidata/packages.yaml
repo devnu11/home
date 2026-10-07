@@ -14,6 +14,7 @@ packages:
     formulae: []
     casks:
       - beyond-compare
+      - karabiner-elements  # rules in dot_config/karabiner, enabled by run_onchange_after_enable-karabiner-rules
   # Beyond Compare is not in Debian/Ubuntu repos: install Scooter Software's
   # .deb by hand from https://www.scootersoftware.com/download.
   apt: []
