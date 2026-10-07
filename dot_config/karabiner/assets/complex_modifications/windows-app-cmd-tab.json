@@ -1,0 +1,29 @@
+{
+    "title": "Windows App: Cmd+Tab -> Alt+Tab",
+    "rules": [
+        {
+            "description": "Cmd+Tab sends Alt+Tab when Windows App is frontmost",
+            "manipulators": [
+                {
+                    "type": "basic",
+                    "from": {
+                        "key_code": "tab",
+                        "modifiers": {
+                            "mandatory": ["command"],
+                            "optional": ["shift"]
+                        }
+                    },
+                    "to": [
+                        { "key_code": "tab", "modifiers": ["left_option"] }
+                    ],
+                    "conditions": [
+                        {
+                            "type": "frontmost_application_if",
+                            "bundle_identifiers": ["^com\\.microsoft\\.rdc\\.macos$"]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

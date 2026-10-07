@@ -15,6 +15,11 @@ tests
 Documents
 {{ end }}
 
+{{ if ne .chezmoi.os "darwin" }}
+# Karabiner-Elements is macOS-only.
+.config/karabiner
+{{ end }}
+
 {{ if eq .chezmoi.os "windows" }}
 # No zsh on Windows; Git Bash reads .bashrc.
 .zshrc

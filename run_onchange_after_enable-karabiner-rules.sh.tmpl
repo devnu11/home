@@ -1,0 +1,47 @@
+{{ if eq .chezmoi.os "darwin" -}}
+{{   $dir := "dot_config/karabiner/assets/complex_modifications" -}}
+{{   $rules := list "windows-app-cmd-tab.json" -}}
+#!/bin/sh
+# Enable the complex-modification rules chezmoi ships in
+# ~/.config/karabiner/assets/complex_modifications/ in Karabiner's selected
+# profile. Karabiner owns karabiner.json and rewrites it from its UI, so it is
+# patched here instead of being managed as a file. A rule replaces any rule
+# with the same description, so reruns never duplicate it, and rules added in
+# the UI are left alone. Karabiner reloads the file when it changes.
+#
+# Reruns when a rule file changes:
+{{-   range $rules }}
+# {{ . }} {{ include (printf "%s/%s" $dir .) | sha256sum }}
+{{-  end }}
+
+set -e
+ASSETS="$HOME/.config/karabiner/assets/complex_modifications"
+CONFIG="$HOME/.config/karabiner/karabiner.json"
+RULES="{{ join " " $rules }}"
+# What Karabiner writes on first launch; enough for it to adopt.
+EMPTY='{"profiles":[{"name":"Default profile","selected":true,"complex_modifications":{"rules":[]}}]}'
+
+command -v jq >/dev/null 2>&1 || {
+	echo "karabiner: jq not found, rules not enabled" >&2
+	exit 0
+}
+
+# Replace rules sharing a description with asset $1's rules, in the selected
+# profile (or the first one when none is marked selected).
+enable_rule() {
+	jq --slurpfile asset "$1" '
+		($asset[0].rules) as $new
+		| ($new | map(.description)) as $names
+		| ((.profiles | map(.selected == true) | index(true)) // 0) as $p
+		| .profiles[$p].complex_modifications.rules |=
+			((. // []) | map(select(.description as $d | all($names[]; . != $d))) + $new)
+	' "$CONFIG" >"$CONFIG.tmp"
+	mv "$CONFIG.tmp" "$CONFIG"
+}
+
+[ -s "$CONFIG" ] || printf '%s\n' "$EMPTY" >"$CONFIG"
+for rule in $RULES; do
+	enable_rule "$ASSETS/$rule"
+	echo "karabiner: enabled $rule"
+done
+{{ end -}}
