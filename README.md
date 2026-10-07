@@ -122,8 +122,11 @@ give a different command per shell, or leave a shell out.
   scripts, build tools and `cmd /c` never load it. Its prompt can't show the
   last exit status or colour by directory.
 
-Unix-only aliases and functions (the `ls`/`find`/`chmod`/`tar` families and so
-on) stay in `interactive.sh`.
+Unix-only aliases (the `ls`/`find`/`chmod`/`tar` families and so on) live in
+the same file as bash/zsh-only entries, so every alias is in one place;
+`interactive.sh` keeps only functions. `ls` itself is `ls -aFh $LS_COLOR_FLAG`:
+`interactive.sh` sets that flag at startup to `--color=auto`, or `-G` for an
+older BSD `ls`.
 
 ## Per-machine and corporate overrides
 
