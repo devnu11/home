@@ -1,0 +1,28 @@
+@echo off
+rem Managed by chezmoi. Edit the source: `chezmoi edit ~/.cmdrc.cmd`
+rem cmd.exe's rc file: the cmd counterpart of env.sh plus interactive.sh. The
+rem "Command Prompt (home)" Windows Terminal profile runs it with `cmd /k`. It
+rem is NOT an AutoRun entry, so scripts, build tools and `cmd /c` never load it.
+
+rem PATH: ~/bin, then ~/.local/bin (uv tools such as handy) in front.
+if exist "%USERPROFILE%\bin" set "PATH=%USERPROFILE%\bin;%PATH%"
+if exist "%USERPROFILE%\.local\bin" set "PATH=%USERPROFILE%\.local\bin;%PATH%"
+
+rem Aliases shared with bash, zsh and PowerShell (.chezmoidata/aliases.yaml).
+doskey /listsize=5000
+doskey /macrofile="%USERPROFILE%\.config\cmd\aliases.doskey"
+
+rem Prompt: [user@host:path], coloured like interactive.sh. cmd can't show the
+rem last exit status or colour by directory, so the path is always green.
+set "_who=$E[0;35m%USERNAME%"
+for %%u in ({{ .lamaisonDefaultUsername | quote }} "devans" "d.evans" "dave" "djevans") do (
+	if /i "%USERNAME%"=="%%~u" set "_who=$E[1;30mme"
+)
+set "_where=$E[0;31m@%COMPUTERNAME%"
+if /i "%COMPUTERNAME%"=={{ splitList "." .lamaisonDefaultHostname | first | quote }} set "_where=$E[1;30m@%COMPUTERNAME%"
+set "PROMPT=$E[0m[%_who%%_where%$E[1;30m:$E[0;32m$P$E[0m] "
+set "_who="
+set "_where="
+
+rem Machine-local additions. Not tracked in the dotfiles repo.
+if exist "%USERPROFILE%\.cmdrc.local.cmd" call "%USERPROFILE%\.cmdrc.local.cmd"
