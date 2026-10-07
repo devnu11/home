@@ -158,8 +158,28 @@ check_packages() {
 # Empty where the package manager is missing: the script then only warns.
 expected_packages() {
 	case "$(uname -s)" in
-		Darwin) command -v brew >/dev/null 2>&1 && echo beyond-compare ;;
+		Darwin) command -v brew >/dev/null 2>&1 && echo beyond-compare karabiner-elements ;;
 	esac
+}
+
+KARABINER_RULE='Cmd+Tab sends Alt+Tab when Windows App is frontmost'
+
+# On macOS the shipped rule is enabled in karabiner.json exactly once;
+# elsewhere nothing of Karabiner's lands.
+check_karabiner() {
+	section "karabiner"
+	if [ "$(uname -s)" != Darwin ]; then
+		assert_absent .config/karabiner
+		return
+	fi
+	have jq || return 0
+	assert_eq "rule enabled $(karabiner_rule_count) time(s)" "rule enabled 1 time(s)"
+}
+
+karabiner_rule_count() {
+	jq --arg d "$KARABINER_RULE" \
+		'[.profiles[].complex_modifications.rules[]? | select(.description == $d)] | length' \
+		"$FAKE_HOME/.config/karabiner/karabiner.json"
 }
 
 check_handy() {
@@ -202,6 +222,7 @@ check_idempotent() {
 # re-run only when what they hash changes, and links are already in place.
 check_no_script_acted() {
 	! grep -q 'handy: installing' "$1" || fail "install-handy re-ran on an unchanged source"
+	! grep -q 'karabiner: enabled' "$1" || fail "enable-karabiner-rules re-ran on unchanged rules"
 	! grep -Eq '^(link|relink|prune) ' "$1" || fail "link script changed something on a re-run"
 }
 
@@ -212,11 +233,13 @@ check_targets
 check_gitconfig
 check_skill_links
 check_packages
+check_karabiner
 check_handy
 check_shell bash
 check_shell zsh
 check_idempotent
 check_skill_links
+check_karabiner
 
 if [ -s "$FAILURES" ]; then
 	printf '\n%d failure(s)\n' "$(grep -c '^    FAIL' "$FAILURES")"
