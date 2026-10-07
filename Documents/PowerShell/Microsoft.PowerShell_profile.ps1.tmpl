@@ -77,7 +77,8 @@ function pd {
     if ($args.Count -eq 0) { Pop-Location; return }
     Push-Location $args[0]
     if ($args.Count -eq 1) { return }
-    try { & $args[1] @($args | Select-Object -Skip 2) } finally { Pop-Location }
+    $command, $rest = $args[1], @($args | Select-Object -Skip 2)
+    try { & $command @rest } finally { Pop-Location } # splatting needs a variable
 }
 
 # Extract archives with Windows' bsdtar, which reads zip, tar, gz, bz2 and 7z.
