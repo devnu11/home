@@ -150,6 +150,16 @@ check_skill_links() {
 	done
 }
 
+# A clone already at the pin keeps its branch: checkout must not detach it.
+check_skills_branch_kept() {
+	section "claude-skills branch kept at the pin"
+	clone="$FAKE_HOME/code/claude-skills"
+	git -C "$clone" switch -q -c ci-work || { fail "could not create a branch"; return; }
+	script=$(chez execute-template "$(cat "$SRC/run_onchange_after_checkout-claude-skills.sh.tmpl")")
+	in_home sh -c "$script" >/dev/null || fail "checkout script: exit $?"
+	assert_eq "branch: $(git -C "$clone" branch --show-current)" "branch: ci-work"
+}
+
 # The commit .chezmoidata/claude-skills.yaml pins.
 skills_pin() {
 	sed -n 's/^ *commit: *//p' "$SRC/.chezmoidata/claude-skills.yaml"
@@ -321,6 +331,7 @@ check_brew_after_system
 check_idempotent
 check_claude_settings
 check_skill_links
+check_skills_branch_kept
 check_karabiner
 check_existing_home
 
