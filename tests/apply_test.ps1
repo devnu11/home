@@ -39,6 +39,8 @@ $FakeEnv = [ordered]@{
     UV_PYTHON_BIN_DIR     = '.local\bin'
 }
 
+$TerminalFragment = 'AppData\Local\Microsoft\Windows Terminal\Fragments\home\cmd.json'
+
 $Managed = '.gitconfig', '.shell\env.sh', '.shell\aliases.sh', '.shell\lamaison.sh', '.bashrc', '.bash_profile', '.claude\CLAUDE.md',
            '.claude\hooks\chezmoi-guard.sh', '.claude\settings.json',
            'Documents\PowerShell\Microsoft.PowerShell_profile.ps1',
@@ -47,8 +49,6 @@ $Managed = '.gitconfig', '.shell\env.sh', '.shell\aliases.sh', '.shell\lamaison.
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.
 $Unmanaged = '.zshrc', '.zprofile', '.zshenv', 'README.md', 'LICENSE', 'handy', 'tests', '.github'
-
-$TerminalFragment = 'AppData\Local\Microsoft\Windows Terminal\Fragments\home\cmd.json'
 
 # doskey macros ~\.cmdrc.cmd must define (name=expansion), from aliases.yaml.
 $CmdMacros = 'gs=git status $*', '..=cd .. $*', 'll=dir $*', 'h=doskey /history $B findstr /i $*'
