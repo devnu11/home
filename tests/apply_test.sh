@@ -200,6 +200,16 @@ check_shell() {
 	done
 }
 
+# Homebrew must come after /usr/bin so it can never shadow sudo and friends.
+check_brew_after_system() {
+	section "homebrew after system dirs"
+	[ -d /opt/homebrew/bin ] || { echo "    skip: no /opt/homebrew"; return 0; }
+	have zsh || return 0
+	order=$(in_home PATH=/usr/bin:/bin zsh -lc 'print -l $path' </dev/null |
+		grep -nx -e /usr/bin -e /opt/homebrew/bin | cut -d: -f2 | paste -sd' ' -)
+	assert_eq "$order" "/usr/bin /opt/homebrew/bin"
+}
+
 # First PATH entry seen by shell $1 started with flags $2.
 path_head() {
 	path=$(in_home PATH=/usr/bin:/bin "$1" "$2" 'printf %s "$PATH"' 2>"$WORK/stderr" </dev/null) ||
@@ -237,6 +247,7 @@ check_karabiner
 check_handy
 check_shell bash
 check_shell zsh
+check_brew_after_system
 check_idempotent
 check_skill_links
 check_karabiner
