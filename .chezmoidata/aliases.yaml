@@ -6,7 +6,8 @@
 #
 # A plain string is the same command in all three. A map lists only the shells
 # the alias exists in, so leaving a shell out skips it there. In cmd, `$B` is a
-# pipe. Values must not contain a single quote.
+# pipe. Every bash/zsh alias lives here (even Unix-only ones) so there is one
+# place to look; only functions stay in interactive.sh.
 #
 # In PowerShell these win over built-in aliases of the same name (gc, gl, gp,
 # gcm, h). Aliases whose point is a Unix flag (cp -i, rm -iv, ls -F, ps auxf)
@@ -51,7 +52,6 @@ aliases:
   ll: {sh: ls -Fls, pwsh: Get-ChildItem, cmd: dir}
   la: {sh: ls -Alh, pwsh: Get-ChildItem -Force, cmd: dir /a}
   kk: ll
-  l: {pwsh: Get-ChildItem -Force}
 
   # --- files -----------------------------------------------------------
   c: {sh: cat, pwsh: Get-Content, cmd: type}
@@ -63,3 +63,96 @@ aliases:
   # --- search history and processes ------------------------------------
   h: {sh: "history | grep ", pwsh: Get-History | Select-String, cmd: doskey /history $B findstr /i}
   p: {sh: "ps aux | grep ", pwsh: Get-Process | Out-String -Stream | Select-String, cmd: tasklist $B findstr /i}
+
+  # ===== Unix-only (bash and zsh) =====================================
+
+  # --- listing (ll, la, kk and l's PowerShell form are above) ------------
+  ls: {sh: "ls -aFh $LS_COLOR_FLAG"}
+  l: {sh: "ls -al --color", pwsh: Get-ChildItem -Force}
+  lf: {sh: "ls -l | egrep -v '^d'"}
+  lr: {sh: "ls -lRh"}
+  lx: {sh: "ls -lXBh"}
+  lk: {sh: "ls -lSrh"}
+  lc: {sh: "ls -lcrh"}
+  lu: {sh: "ls -lurh"}
+  lt: {sh: "ls -ltrh"}
+  lm: {sh: "ls -alh |more"}
+  lw: {sh: "ls -xAh"}
+  labc: {sh: "ls -lap"}
+  ldir: {sh: "ls -l | egrep '^d'"}
+
+  # --- find --------------------------------------------------------------
+  f: {sh: "find . | grep "}
+  fl: {sh: "find -L . -name"}
+  fd: {sh: "find . -type d -name"}
+  ff: {sh: "find . -type f -name"}
+  fx: {sh: "find . -type f -executable -name"}
+  fdl: {sh: "find -L . -type d -name"}
+  ffl: {sh: "find -L . -type f -name"}
+  flf: {sh: "ffl"}
+  fld: {sh: "fdl"}
+
+  # --- safer or friendlier defaults --------------------------------------
+  cp: {sh: "cp -i"}
+  mv: {sh: "mv -i"}
+  rm: {sh: "rm -iv"}
+  rmd: {sh: "/bin/rm -rfv "}
+  mkdir: {sh: "mkdir -p"}
+  less: {sh: "less -R"}
+  ping: {sh: "ping -c 10"}
+  multitail: {sh: "multitail --no-repeat -c"}
+  "apt-get": {sh: "sudo apt-get"}
+
+  # --- editors (edit and sedit are functions in interactive.sh) ----------
+  pico: {sh: "edit"}
+  spico: {sh: "sedit"}
+  nano: {sh: "edit"}
+  snano: {sh: "sedit"}
+
+  # --- permissions -------------------------------------------------------
+  mx: {sh: "chmod a+x"}
+  "000": {sh: "chmod -R 000"}
+  "644": {sh: "chmod -R 644"}
+  "666": {sh: "chmod -R 666"}
+  "755": {sh: "chmod -R 755"}
+  "777": {sh: "chmod -R 777"}
+
+  # --- archives ----------------------------------------------------------
+  mktar: {sh: "tar -cvf"}
+  mkbz2: {sh: "tar -cvjf"}
+  mkgz: {sh: "tar -cvzf"}
+  untar: {sh: "tar -xvf"}
+  unbz2: {sh: "tar -xvjf"}
+  ungz: {sh: "tar -xvzf"}
+
+  # --- disk and system ---------------------------------------------------
+  cls: {sh: "clear"}
+  diskusage: {sh: "du -sh * | sort -h -r | less"}
+  diskspace: {sh: "du -S | sort -n -r |more"}
+  folders: {sh: "du -h --max-depth=1"}
+  folderssort: {sh: "find . -maxdepth 1 -type d -print0 | xargs -0 du -sk | sort -rn"}
+  tree: {sh: "tree -CAhF --dirsfirst"}
+  treed: {sh: "tree -CAFd"}
+  mountedinfo: {sh: "df -hT"}
+  topcpu: {sh: "/bin/ps -eo pcpu,pid,user,args | sort -k 1 -r | head -10"}
+  cpu: {sh: "grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage}' | awk '{printf(\"%.1f\\n\", $1)}'"}
+  checkcommand: {sh: "type -t"}
+  countfiles: {sh: "for t in files links directories; do echo `find . -type ${t:0:1} | wc -l` $t; done 2> /dev/null"}
+  logs: {sh: "sudo find /var/log -type f -exec file {} \\; | grep 'text' | cut -d' ' -f1 | sed -e's/:$//g' | grep -v '[0-9]$' | xargs tail -f"}
+  rebootsafe: {sh: "sudo shutdown -r now"}
+  rebootforce: {sh: "sudo shutdown -r -n now"}
+
+  # --- network -----------------------------------------------------------
+  ipview: {sh: "netstat -anpl | grep :80 | awk {'print $5'} | cut -d\":\" -f1 | sort | uniq -c | sort -n | sed -e 's/^ *//' -e 's/ *$//'"}
+  openports: {sh: "netstat -nape --inet"}
+  whatismyip: {sh: "whatsmyip"}
+
+  # --- misc --------------------------------------------------------------
+  py: {sh: "python3"}
+  mcd: {sh: "mkdirg"}
+  sha1: {sh: "openssl sha1"}
+  # Disabled, kept from the original dotfiles:
+  # freshclam: {sh: "sudo freshclam"}
+  # vi: {sh: "vim"}
+  # svi: {sh: "sudo vi"}
+  # vis: {sh: "vim \"+set si\""}
