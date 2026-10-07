@@ -1,0 +1,9 @@
+{{- /* doskey macros for cmd.exe, generated from .chezmoidata/aliases.yaml and
+       loaded by ~/.cmdrc.cmd. A macro file has no comment syntax, so this
+       note lives in the template only. $* passes the typed arguments on. */ -}}
+{{ range $name, $alias := .aliases -}}
+{{   $command := includeTemplate "alias-command" (dict "alias" $alias "shell" "cmd") -}}
+{{   if $command -}}
+{{ $name }}={{ $command }} $*
+{{   end -}}
+{{ end -}}

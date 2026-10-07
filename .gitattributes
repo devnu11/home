@@ -1,0 +1,2 @@
+# cmd.exe misparses some constructs (labels, blocks) in LF-only files.
+*.cmd.tmpl text eol=crlf

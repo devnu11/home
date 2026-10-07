@@ -11,8 +11,11 @@ tests
 .claude/skills/synced
 
 {{ if ne .chezmoi.os "windows" }}
-# PowerShell profile is Windows-only.
+# PowerShell profiles and the cmd.exe setup are Windows-only.
 Documents
+.cmdrc.cmd
+.config/cmd
+AppData
 {{ end }}
 
 {{ if ne .chezmoi.os "darwin" }}

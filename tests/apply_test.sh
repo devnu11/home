@@ -80,7 +80,7 @@ MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell
 .zshenv .zprofile .zshrc .claude/CLAUDE.md .claude/hooks/chezmoi-guard.sh .claude/settings.json'
 
 # Source-dir furniture and Windows-only files stay out of ~.
-UNMANAGED='README.md LICENSE handy tests .github Documents'
+UNMANAGED='README.md LICENSE handy tests .github Documents .cmdrc.cmd .config/cmd AppData'
 
 # key=value pairs the Unix gitconfig must hold.
 GIT_VALUES='user.name=CI Test

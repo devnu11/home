@@ -1,0 +1,11 @@
+{
+  "profiles": [
+    {
+      "guid": "{b343c5f8-1597-5e3a-bb48-99b33c848e77}",
+      "name": "Command Prompt (home)",
+      "commandline": "%SystemRoot%\\System32\\cmd.exe /k \"%USERPROFILE%\\.cmdrc.cmd\"",
+      "startingDirectory": "%USERPROFILE%",
+      "icon": "ms-appx:///ProfileIcons/{0caa0dad-35be-5f56-a8ff-afceeeaa6101}.png"
+    }
+  ]
+}
