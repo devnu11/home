@@ -26,8 +26,10 @@ Before asking me to approve one:
    `~/code/claude-skills/install.sh`, which lives outside the source repo:
    show its result with
    `CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run`.
-4. The apply may also `git pull` the externals (`~/code/claude-skills`): show
-   `git -C ~/code/claude-skills status -sb` and what a pull would bring in.
+4. `~/code/claude-skills` is pinned, not pulled: the apply checks out the
+   commit in `.chezmoidata/claude-skills.yaml`. Show
+   `git -C ~/code/claude-skills status -sb` and
+   `git -C ~/code/claude-skills log --oneline HEAD..<pinned sha>`.
 
 Test in a throwaway HOME (e.g. `HOME=$(mktemp -d)` with `chezmoi --source`)
 instead. Never route one of these commands through a script file or another
