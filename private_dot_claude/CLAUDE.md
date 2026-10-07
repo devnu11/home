@@ -21,6 +21,13 @@ Before asking me to approve one:
    and show me the output. No `grep`, `head` or other trimming: local edits in
    `~` that the apply would overwrite must be visible.
 2. Say which files will change and whether any have local edits.
+3. For every script `chezmoi status` lists (`R`), say what it will do, since
+   `chezmoi diff` shows only its text. `link-claude-skills` hands off to
+   `~/code/claude-skills/install.sh`, which lives outside the source repo:
+   show its result with
+   `CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run`.
+4. The apply may also `git pull` the externals (`~/code/claude-skills`): show
+   `git -C ~/code/claude-skills status -sb` and what a pull would bring in.
 
 Test in a throwaway HOME (e.g. `HOME=$(mktemp -d)` with `chezmoi --source`)
 instead. Never route one of these commands through a script file or another

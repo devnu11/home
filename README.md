@@ -238,6 +238,15 @@ standalone and the two paths can't drift. It only touches symlinks pointing
 back into that repo, leaving `synced/` and any hand-made skill directory alone,
 and it prunes links to skills that have been deleted.
 
+`chezmoi diff` can't show what that will do: it only sees the wrapper, and
+`install.sh` lives in `~/code/claude-skills`, outside this repo. Before an
+apply, preview the links and any pending pull of the external:
+
+```sh
+CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run
+git -C ~/code/claude-skills fetch && git -C ~/code/claude-skills log --oneline HEAD..@{u}
+```
+
 ## handy
 
 `handy/` is a git submodule of a separate Python CLI. `chezmoi apply` installs
