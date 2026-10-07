@@ -131,10 +131,14 @@ PS3='Please enter a number from above list: '
 
 alias cls="clear"
 alias mkd="mkdir -p"
-alias path="echo -e ${PATH//:/\\n} | less"
 alias less="less -R"
 alias diskusage="du -sh * | sort -h -r | less"
 alias py="python3"
+
+# One PATH entry per line, read when called rather than at startup.
+# Re-sourcing over the old `path` alias would expand it inside the definition.
+unalias path 2>/dev/null
+path() { printf '%s\n' "$PATH" | tr ':' '\n' | less; }
 
 # --- ls -----------------------------------------------------------------
 # GNU coreutils spells colour --color=auto; older BSD ls only knows -G.
