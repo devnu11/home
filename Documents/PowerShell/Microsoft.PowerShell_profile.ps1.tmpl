@@ -54,20 +54,13 @@ foreach ($name in {{ join ", " $names }}) {
 {{- range $name, $alias := .aliases }}
 {{-   $command := includeTemplate "alias-command" (dict "alias" $alias "shell" "pwsh") }}
 {{-   if $command }}
-function {{ $name }} { {{ $command }} @args }
+function {{ $name }} { {{ $command }}{{ if not (contains "@args" $command) }} @args{{ end }} }
 {{-   end }}
 {{- end }}
 
 # --- Functions ----------------------------------------------------------
 # One PATH entry per line.
 function path { $env:PATH -split ';' }
-
-# Where a command comes from (every match, like `which -a`).
-function which([string]$name) { Get-Command $name -All | Select-Object -ExpandProperty Source }
-
-# Listings sorted by modification time and by size, like `ls -ltr` / `ls -lSr`.
-function lt { Get-ChildItem @args | Sort-Object LastWriteTime }
-function lk { Get-ChildItem @args | Sort-Object Length }
 
 # Go up $count directories (up 3 == cd ../../..).
 function up([int]$count = 1) {

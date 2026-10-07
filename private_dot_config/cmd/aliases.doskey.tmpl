@@ -4,6 +4,6 @@
 {{ range $name, $alias := .aliases -}}
 {{   $command := includeTemplate "alias-command" (dict "alias" $alias "shell" "cmd") -}}
 {{   if $command -}}
-{{ $name }}={{ $command }} $*
+{{ $name }}={{ $command }}{{ if not (contains "$*" $command) }} $*{{ end }}
 {{   end -}}
 {{ end -}}
