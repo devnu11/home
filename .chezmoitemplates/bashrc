@@ -1,5 +1,6 @@
 # Managed by chezmoi. Edit the source: `chezmoi edit ~/.shell/bashrc.sh`
 # The setup itself lives in ~/.shell/bashrc.sh, so ~/.bash_profile can load it
-# on machines where ~/.bashrc is shared and not ours.
+# on machines where ~/.bashrc is shared and not ours. Work machines get this
+# as ~/my.bashrc instead, for the team's ~/.bashrc to source.
 
 if [ -f "$HOME/.shell/bashrc.sh" ]; then . "$HOME/.shell/bashrc.sh"; fi

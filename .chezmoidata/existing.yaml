@@ -4,6 +4,7 @@
 # alone (e.g. a team-shared ~/.bashrc), so chezmoi never replaces them.
 existingTargets:
   - .bashrc
+  - my.bashrc
   - .bash_profile
   - .zshrc
   - .zprofile

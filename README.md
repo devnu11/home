@@ -17,8 +17,9 @@ chezmoi diff      # review before touching the home directory
 chezmoi apply
 ```
 
-`init` prompts once for name, email, and whether the machine is `personal` or
-`work`, and writes the answers plus the source path to
+`init` prompts once for whether the machine is a `personal` or `work` computer,
+then name and email (a work computer's email defaults to the work address),
+and writes the answers plus the source path to
 `~/.config/chezmoi/chezmoi.toml`. That file is per-machine and is **not** in
 this repo.
 
@@ -47,7 +48,7 @@ things soften that:
 | `dot_zprofile` | `~/.zprofile` | Login zsh: re-sources `env.sh` after macOS `path_helper` |
 | `dot_zshrc` | `~/.zshrc` | Interactive zsh: `interactive.sh`, then `~/.zshrc.local` |
 | `dot_bash_profile` | `~/.bash_profile` | Login bash: `~/.profile` if present, `env.sh`, then `.bashrc` (and `.shell/bashrc.sh` if `.bashrc` is shared) |
-| `dot_bashrc` | `~/.bashrc` | Sources `.shell/bashrc.sh` |
+| `dot_bashrc.tmpl`, `my.bashrc.tmpl` | `~/.bashrc`, or `~/my.bashrc` on a work computer | Sources `.shell/bashrc.sh`; both render `.chezmoitemplates/bashrc` |
 | `dot_shell/bashrc.sh` | `~/.shell/bashrc.sh` | `env.sh`, then interactive-only config and `~/.bashrc.local` |
 | `Documents/PowerShell/Microsoft.PowerShell_profile.ps1.tmpl` | `$PROFILE` | Windows only; aliases, helpers and prompt, see below |
 | `Documents/WindowsPowerShell/Microsoft.PowerShell_profile.ps1` | 5.1's `$PROFILE` | Loads the one above, so Windows PowerShell matches |
@@ -141,11 +142,15 @@ None of these are tracked. Create whichever a machine needs:
 | `~/.cmdrc.local.cmd` | Same, for cmd.exe |
 | `~/.claude/CLAUDE.local.md` | Claude instructions that only apply on this machine |
 
-A work laptop typically needs only `~/.gitconfig.local`:
+A `work` computer differs from a `personal` one in two ways:
+
+- The git email defaults to the work address.
+- chezmoi writes `~/my.bashrc` and leaves `~/.bashrc` alone, even when it is a
+  plain file: that one belongs to the team and sources `~/my.bashrc`.
+
+Beyond that, a work laptop typically needs only `~/.gitconfig.local`:
 
 ```ini
-[user]
-	email = dave.evans@example.com
 [http]
 	proxy = http://proxy.corp.example.com:8080
 ```

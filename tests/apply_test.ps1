@@ -194,7 +194,7 @@ function Test-Bootstrap {
         --promptString "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)=" `
         --promptString "Directory shown blue in the prompt (blank for none)=" `
         --promptString "Directory shown cyan in the prompt (blank for none)=" `
-        --promptChoice 'Machine profile=personal' | Out-Null
+        --promptChoice 'Is this a personal or work computer=personal' | Out-Null
     Invoke-Chezmoi apply | Out-Null
 }
 

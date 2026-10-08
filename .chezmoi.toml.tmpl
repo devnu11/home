@@ -1,8 +1,10 @@
 {{/* Prompts run once, on `chezmoi init`. Answers land in ~/.config/chezmoi/chezmoi.toml
      (or %USERPROFILE%\.config\chezmoi\chezmoi.toml on Windows), which is NOT in this repo. */}}
+{{- /* Asked first: later defaults depend on it. */ -}}
+{{- $profile := promptChoiceOnce . "profile" "Is this a personal or work computer" (list "personal" "work") -}}
+{{- $defaultEmail := get (dict "work" "d.evans@samsung.com") $profile | default "" -}}
 {{- $name  := promptStringOnce . "name"  "Full name for git commits" -}}
-{{- $email := promptStringOnce . "email" "Email address for git commits" -}}
-{{- $profile := promptChoiceOnce . "profile" "Machine profile" (list "personal" "work") -}}
+{{- $email := promptStringOnce . "email" "Email address for git commits" $defaultEmail -}}
 {{- /* Shell settings, written to ~/.shell/lamaison.sh as LAMAISON_* variables. */ -}}
 {{- $username := promptStringOnce . "lamaisonDefaultUsername" "Your username (shown as 'me' in the prompt)" .chezmoi.username -}}
 {{- $hostname := promptStringOnce . "lamaisonDefaultHostname" "Usual machine, shown grey in the prompt" .chezmoi.hostname -}}

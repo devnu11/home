@@ -80,7 +80,7 @@ MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell
 .zshenv .zprofile .zshrc .claude/CLAUDE.md .claude/hooks/chezmoi-guard.sh .claude/settings.json'
 
 # Source-dir furniture and Windows-only files stay out of ~.
-UNMANAGED='README.md LICENSE handy tests .github Documents .cmdrc.cmd .config/cmd AppData'
+UNMANAGED='my.bashrc README.md LICENSE handy tests .github Documents .cmdrc.cmd .config/cmd AppData'
 
 # key=value pairs the Unix gitconfig must hold.
 GIT_VALUES='user.name=CI Test
@@ -100,18 +100,24 @@ seed_claude_settings() {
 
 bootstrap() {
 	section "init + first apply"
+	chez_init \
+		--promptChoice 'Is this a personal or work computer=personal' \
+		--promptString 'Email address for git commits=ci@example.com'
+	chez apply || fail "first apply: exit $?"
+}
+
+# `chezmoi init` with the prompts every profile shares answered; $@ adds more.
+chez_init() {
 	# --promptString/--promptChoice key on the prompt text, not the variable.
 	chez init \
 		--promptString 'Full name for git commits=CI Test' \
-		--promptString 'Email address for git commits=ci@example.com' \
 		--promptString "Your username (shown as 'me' in the prompt)=ci" \
 		--promptString "Usual machine, shown grey in the prompt=ci-host" \
 		--promptString "Host for a bare \`ssh\` (blank for none)=" \
 		--promptString "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)=" \
 		--promptString "Directory shown blue in the prompt (blank for none)=" \
 		--promptString "Directory shown cyan in the prompt (blank for none)=" \
-		--promptChoice 'Machine profile=personal' || fail "init: exit $?"
-	chez apply || fail "first apply: exit $?"
+		"$@" || fail "init: exit $?"
 }
 
 check_targets() {
@@ -314,6 +320,23 @@ check_backup() {
 	assert_eq "$(cat "$1")" "$2"
 }
 
+# A work computer: the team's ~/.bashrc stays, ours lands in ~/my.bashrc
+# (which the team file sources), and the email defaults to the work one.
+check_work_home() {
+	section "work computer"
+	FAKE_HOME="$WORK/work"
+	mkdir -p "$FAKE_HOME"
+	printf '%s\n' "$TEAM_BASHRC" >"$FAKE_HOME/.bashrc"
+	chez_init --promptChoice 'Is this a personal or work computer=work' --promptDefaults
+	chez apply || fail "work apply: exit $?"
+	assert_eq "$(cat "$FAKE_HOME/.bashrc")" "$TEAM_BASHRC"
+	assert_file my.bashrc
+	assert_eq "$(git config -f "$FAKE_HOME/.gitconfig" user.email)" "d.evans@samsung.com"
+	assert_eq "bash -ic: $(path_head bash -ic)" "bash -ic: $FAKE_HOME/.local/bin"
+}
+
+TEAM_BASHRC='[ -f "$HOME/my.bashrc" ] && . "$HOME/my.bashrc"'
+
 # --- main ---------------------------------------------------------------
 
 seed_claude_settings
@@ -334,6 +357,7 @@ check_skill_links
 check_skills_branch_kept
 check_karabiner
 check_existing_home
+check_work_home
 
 if [ -s "$FAILURES" ]; then
 	printf '\n%d failure(s)\n' "$(grep -c '^    FAIL' "$FAILURES")"
