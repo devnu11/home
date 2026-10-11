@@ -22,14 +22,9 @@ Before asking me to approve one:
    `~` that the apply would overwrite must be visible.
 2. Say which files will change and whether any have local edits.
 3. For every script `chezmoi status` lists (`R`), say what it will do, since
-   `chezmoi diff` shows only its text. `link-claude-skills` hands off to
-   `~/code/claude-skills/install.sh`, which lives outside the source repo:
-   show its result with
-   `CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run`.
-4. `~/code/claude-skills` is pinned, not pulled: the apply checks out the
-   commit in `.chezmoidata/claude-skills.yaml`. Show
-   `git -C ~/code/claude-skills status -sb` and
-   `git -C ~/code/claude-skills log --oneline HEAD..<pinned sha>`.
+   `chezmoi diff` shows only its text.
+4. Never run anything in another local repo, such as `~/code/claude-skills`;
+   the skills come from the `private_dot_claude/skills` submodule.
 
 Test in a throwaway HOME (e.g. `HOME=$(mktemp -d)` with `chezmoi --source`)
 instead. Never route one of these commands through a script file or another

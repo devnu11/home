@@ -58,16 +58,16 @@ things soften that:
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
 | `private_dot_claude/hooks/chezmoi-guard.sh` | `~/.claude/hooks/chezmoi-guard.sh` | Claude Code hook: sessions must ask before `chezmoi apply` and friends; see below |
 | `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
-| `.chezmoiexternal.toml.tmpl` | `~/code/claude-skills` | Clones the Claude skills repo, pinned; see below |
+| `private_dot_claude/skills/` | `~/.claude/skills/<name>/` | Claude skills, a submodule; each skill folder is copied, see below |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
-| `run_after_link-claude-skills.{sh,ps1}.tmpl` | — | Links those skills into `~/.claude/skills` |
 | `private_dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
 | `run_onchange_after_enable-karabiner-rules.sh.tmpl` | — | Turns those rules on in Karabiner's selected profile |
 
 `.chezmoiignore` keeps `README.md` and `handy/` out of `~`, skips the PowerShell
 profile off Windows, skips `.zshrc`/`.zprofile`/`.zshenv` on Windows, and leaves
 `~/.claude/skills/synced` alone — that bucket is synced from the Anthropic
-account and is machine state, not config.
+account and is machine state, not config. It also keeps the skills submodule's
+own README, LICENSE, `install.sh` and tests out of `~/.claude/skills`.
 
 ## Why the shell config is split in two
 
@@ -234,59 +234,39 @@ someone who wants only one of them can take just that:
 | Repo | What |
 | --- | --- |
 | [devnu11/handy](https://github.com/devnu11/handy) | Python CLI tools, a git submodule at `handy/` |
-| [devnu11/claude-skills](https://github.com/devnu11/claude-skills) | Claude Code skills, a chezmoi external at `~/code/claude-skills` |
-
-The skills repo is an external rather than a submodule on purpose. chezmoi
-reinterprets filenames in its source directory — `dot_`, `private_`, `run_`
-prefixes — so a submodule there would mangle any repo not written for chezmoi.
-An external is cloned verbatim, and needs no `git submodule update --init` at
-bootstrap.
+| [devnu11/claude-skills](https://github.com/devnu11/claude-skills) | Claude Code skills, a git submodule at `private_dot_claude/skills/` |
 
 ### Claude skills
 
-Claude Code reads personal skills from `~/.claude/skills/<name>/`, but that
-directory already holds `synced/`, the bucket Anthropic syncs from the account —
-and `git clone` refuses a non-empty destination. So the repo is cloned to
-`~/code/claude-skills` and `run_after_link-claude-skills` symlinks each skill
-into place (directory junctions on Windows, which need no admin rights).
+The skills submodule sits where chezmoi copies it to: each skill folder becomes
+`~/.claude/skills/<name>/`, like any other dotfile, so `chezmoi diff` shows
+every changed line of a skill. `synced/` and any hand-made skill folder there
+are left alone, and dot-folders such as `.github` and `.team` are skipped by
+chezmoi itself.
 
-Linking is done by the skills repo's own `install.sh`, so the repo works
-standalone and the two paths can't drift. It only touches symlinks pointing
-back into that repo, leaving `synced/` and any hand-made skill directory alone,
-and it prunes links to skills that have been deleted.
+chezmoi reads meaning into source filenames (`dot_`, `private_`, `run_`,
+`executable_`, a `.tmpl` suffix), and inside the submodule that applies too.
+The skills repo has no such names today; one added there would be renamed, run
+or templated on apply, and would show up in `chezmoi diff` first.
 
-The clone is **pinned**, not pulled: `install.sh` runs on every apply and the
-skills become instructions Claude follows, so a change to that repo should only
-reach a machine once it is named here. chezmoi never refreshes the external;
-`run_onchange_after_checkout-claude-skills` checks out the commit in
-[`.chezmoidata/claude-skills.yaml`](.chezmoidata/claude-skills.yaml) (detached
-HEAD). To take new skills, review the commits, then pin and commit:
+The submodule commit is the pin; it tracks `main`. To take new skills:
 
 ```sh
-sh scripts/pin-claude-skills.sh [<commit>]   # default origin/main; refuses unpushed commits
-git commit -m "chore(skills): pin claude-skills to <sha>" -- .chezmoidata/claude-skills.yaml
+git submodule update --remote private_dot_claude/skills
+git diff --submodule=log                  # the new commits; chezmoi diff shows the files
+git commit -m "chore(skills): bump claude-skills to <sha>" -- private_dot_claude/skills
 ```
 
-To develop skills in the clone, `git switch main` there first; a dirty clone
-makes the checkout fail rather than lose your changes. A clean clone on a
-branch is not protected: the first apply after a pin change detaches it.
+Develop skills in a separate clone, push, then bump. An edit made in
+`~/.claude/skills` is overwritten by the next apply.
 
-chezmoi's own diff only sees the wrapper scripts; `install.sh` lives in
-`~/code/claude-skills`, outside this repo. So on macOS and Linux, `chezmoi diff`
-ends with [`scripts/preview-claude-skills.sh`](scripts/preview-claude-skills.sh)
-(a `diff` hook in `.chezmoi.toml.tmpl`). It prints nothing when the clone is at
-the pin and no link would change. Otherwise it shows the checkout and the pin,
-whether the checkout contains the pin, the links `install.sh --dry-run` would
-add, change or remove, and the commands to pin and commit. It runs `install.sh`
-from the clone as checked out, as the apply does.
-
-`run_after_link-claude-skills` is listed in every diff because it runs on every
-apply. Since the preview already reports what it would do,
-[`scripts/diff-pager.sh`](scripts/diff-pager.sh) (`diff.pager`) drops it from
-the paged diff; `chezmoi diff --no-pager` still shows it. Only scripts in that
-filter's `HIDDEN` table are dropped, and each entry must name the diff hook that
-reports it (checked by `tests/apply_test.sh`). After pulling this change, run
-`chezmoi init` once so your config picks up `diff.pager`.
+Nothing here runs in another checkout of the skills repo. A machine set up
+before this used a clone at `~/code/claude-skills` with symlinks into it; that
+clone is no longer managed and is left as it is, and the first apply replaces
+the symlinks with copies without writing through them (`tests/apply_test.sh`
+checks this). After pulling, run `git submodule update --init` (`chezmoi
+update` does it) and `chezmoi init` once, to drop the old diff hook and pager
+from your config.
 
 ## handy
 
@@ -340,18 +320,16 @@ pwsh -File tests/apply_test.ps1        # Windows
 ```
 
 Both run `chezmoi init` with canned answers, then `apply`, and check the files
-that land, the gitconfig values, the claude-skills links (symlinks on Unix,
-junctions on Windows), that `handy` is runnable when `uv` is installed, and that
+that land, the gitconfig values, that every skill is copied (and that an old
+link into another clone is replaced, never written through), that `handy` is runnable when `uv` is installed, and that
 a second `apply` changes nothing. The Unix test also starts bash and zsh as
 plain, login and interactive shells and checks `~/.local/bin` heads PATH. The
-Windows test additionally drives the junction script through adding, removing
-and relinking a skill, loads the profile in both PowerShell 7 and Windows
+Windows test additionally loads the profile in both PowerShell 7 and Windows
 PowerShell 5.1 and runs `tests/profile_probe.ps1` inside, runs `~/.cmdrc.cmd`
 under cmd.exe and checks its macros and prompt, and validates the Terminal
 fragment.
 
-They need chezmoi, git, the `handy` submodule, and network access to clone
-claude-skills. CI runs them on Ubuntu, macOS and Windows for every push and pull
+They need chezmoi, git, and the `handy` and `claude-skills` submodules. CI runs them on Ubuntu, macOS and Windows for every push and pull
 request.
 
 ## License
