@@ -1,14 +1,12 @@
 # End-to-end test of `chezmoi apply` on Windows.
 #
 # Bootstraps this source directory into a throwaway home the way a new machine
-# would (init with canned prompt answers, then apply), checks what landed, then
-# drives the claude-skills junction script through add, remove, relink and
-# skip. Nothing touches the real profile: every per-user location chezmoi, git
-# and uv use points into a scratch directory for the whole run.
+# would (init with canned prompt answers, then apply) and checks what landed.
+# Nothing touches the real profile: every per-user location chezmoi, git and
+# uv use points into a scratch directory for the whole run.
 #
-# Needs chezmoi and git on PATH, the handy submodule checked out, and network
-# access (the claude-skills external is cloned from GitHub). uv is optional:
-# its check is skipped when absent.
+# Needs chezmoi and git on PATH and the handy and claude-skills submodules
+# checked out. uv is optional: its check is skipped when absent.
 #
 #     pwsh -File tests/apply_test.ps1
 
@@ -18,7 +16,8 @@ $ErrorActionPreference = 'Stop'
 $Src = Split-Path -Parent $PSScriptRoot
 $Work = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
 $FakeHome = Join-Path $Work 'home'
-$Clone = Join-Path $FakeHome 'code\claude-skills'
+$SkillsSrc = Join-Path $Src 'private_dot_claude\skills'
+$OldClone = Join-Path $Work 'old-clone'
 $Skills = Join-Path $FakeHome '.claude\skills'
 $script:Failures = [Collections.Generic.List[string]]::new()
 
@@ -49,6 +48,9 @@ $Managed = '.gitconfig', '.shell\env.sh', '.shell\aliases.sh', '.shell\lamaison.
 
 # zsh files are Unix-only; source-dir furniture never lands in ~.
 $Unmanaged = '.zshrc', '.zprofile', '.zshenv', 'README.md', 'LICENSE', 'handy', 'tests', '.github'
+
+# Files of the claude-skills submodule that are not skills.
+$SkillsUnmanaged = 'README.md', 'LICENSE', 'install.sh', 'tests', '.github', '.team', '.claude'
 
 # doskey macros ~\.cmdrc.cmd must define (name=expansion), from aliases.yaml.
 $CmdMacros = 'gs=git status $*', '..=cd .. $*', 'll=dir $*', 'h=doskey /history $B findstr /i $*'
@@ -81,11 +83,6 @@ function Section([string]$title) {
 
 function Assert-Equal($actual, $expected) {
     if ($actual -ne $expected) { Fail "got '$actual', want '$expected'" }
-}
-
-# Fail unless the apply output $out matches $pattern.
-function Assert-Reported([string]$out, [string]$pattern) {
-    if ($out -notmatch $pattern) { Fail "output lacks /$pattern/" }
 }
 
 function Enter-FakeHome {
@@ -131,19 +128,6 @@ function Format-Entry([string]$path) {
     return "$($item.Attributes), LinkType '$($item.LinkType)'"
 }
 
-function Get-JunctionTarget([string]$path) {
-    $item = Get-Entry $path
-    if (-not $item -or $item.LinkType -ne 'Junction') { return $null }
-    return [IO.Path]::GetFullPath(@($item.Target)[0]).TrimEnd('\')
-}
-
-function Assert-Junction([string]$name) {
-    $link = Join-Path $Skills $name
-    $got = Get-JunctionTarget $link
-    if (-not $got) { Fail "$link is not a junction (found: $(Format-Entry $link))"; return }
-    Assert-Equal $got ([IO.Path]::GetFullPath((Join-Path $Clone $name)))
-}
-
 function Assert-Absent([string]$relative) {
     if (Test-Path -LiteralPath (Join-Path $FakeHome $relative)) { Fail "~\$relative should not exist" }
 }
@@ -152,32 +136,18 @@ function Assert-File([string]$relative) {
     if (-not (Test-Path -LiteralPath (Join-Path $FakeHome $relative) -PathType Leaf)) { Fail "~\$relative missing" }
 }
 
-# Skill directories in the claude-skills clone: those holding a SKILL.md.
-function Get-RepoSkill {
-    Get-ChildItem -Path $Clone -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
+# Skill folders in the submodule: those holding a SKILL.md.
+function Get-SourceSkill {
+    Get-ChildItem -Path $SkillsSrc -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'SKILL.md') }
 }
 
-function New-Skill([string]$root, [string]$name) {
-    $dir = Join-Path $root $name
-    New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    Set-Content -Path (Join-Path $dir 'SKILL.md') -Value "---`nname: $name`n---"
-}
-
-# A hand-made directory at ~\.claude\skills\$name, holding one file.
-function New-Blocker([string]$name) {
-    $blocker = Join-Path $Skills $name
-    New-Item -ItemType Directory -Path $blocker | Out-Null
-    Set-Content -Path (Join-Path $blocker 'mine.txt') -Value 'hand-made'
-    return $blocker
-}
-
-# Repoint the junction for $name at a decoy skill; returns the decoy's path.
-function Set-JunctionElsewhere([string]$name) {
-    New-Skill $Work 'elsewhere'
-    $link = Join-Path $Skills $name
-    [IO.Directory]::Delete($link, $false)
-    New-Item -ItemType Junction -Path $link -Target (Join-Path $Work 'elsewhere') | Out-Null
-    return Join-Path $Work 'elsewhere'
+# ~\.claude\skills\$name must be a copied folder, not a link, matching the submodule.
+function Assert-SkillCopied([string]$name) {
+    $dest = Join-Path $Skills $name
+    $item = Get-Entry $dest
+    if (-not $item -or $item.LinkType) { Fail "$dest is not a plain folder (found: $(Format-Entry $dest))"; return }
+    $want = Get-Content -Raw (Join-Path (Join-Path $SkillsSrc $name) 'SKILL.md')
+    Assert-Equal (Get-Content -Raw (Join-Path $dest 'SKILL.md')) $want
 }
 
 # --- steps --------------------------------------------------------------
@@ -203,6 +173,23 @@ $WorkGitconfig = "[user]`n`temail = me@work.example"
 
 function Initialize-ExistingDotfiles {
     Set-Content -Path (Join-Path $FakeHome '.gitconfig') -Value $WorkGitconfig -NoNewline
+    Initialize-OldSkillJunction
+}
+
+# A skill junctioned into a separate clone, as the old link script left it.
+function Initialize-OldSkillJunction {
+    $name = (Get-SourceSkill | Select-Object -First 1).Name
+    New-Item -ItemType Directory -Path (Join-Path $OldClone $name), $Skills -Force | Out-Null
+    Set-Content -Path (Join-Path (Join-Path $OldClone $name) 'SKILL.md') -Value 'old clone' -NoNewline
+    New-Item -ItemType Junction -Path (Join-Path $Skills $name) -Target (Join-Path $OldClone $name) | Out-Null
+}
+
+# The first run replaced that junction with a copy and never wrote through it.
+function Test-OldSkillJunction {
+    Section 'old skill junction replaced'
+    $name = (Get-SourceSkill | Select-Object -First 1).Name
+    Assert-Equal (Get-Content -Raw (Join-Path (Join-Path $OldClone $name) 'SKILL.md')) 'old clone'
+    Assert-SkillCopied $name
 }
 
 function Test-Backup {
@@ -226,21 +213,15 @@ function Test-Gitconfig {
     }
 }
 
-# The commit .chezmoidata/claude-skills.yaml pins.
-function Get-SkillsPin {
-    $line = Select-String -Path (Join-Path $Src '.chezmoidata\claude-skills.yaml') -Pattern '^\s*commit:\s*(\S+)'
-    return $line.Matches[0].Groups[1].Value
-}
-
-function Test-SkillJunctions {
-    Section 'claude-skills junctions'
-    if (-not (Test-Path $Clone)) { Fail 'external not cloned to ~\code\claude-skills'; return }
-    Assert-Equal "pin: $(git -C $Clone rev-parse HEAD)" "pin: $(Get-SkillsPin)"
+# Every skill in the submodule is copied; the submodule's furniture is not.
+function Test-Skills {
+    Section 'claude-skills'
     # Not $skills: PowerShell names are case-insensitive and dynamically scoped,
-    # so that would shadow $Skills inside Assert-Junction.
-    $found = @(Get-RepoSkill)
-    if ($found.Count -eq 0) { Fail 'no skills found in the claude-skills clone' }
-    foreach ($skill in $found) { Assert-Junction $skill.Name }
+    # so that would shadow $Skills inside Assert-SkillCopied.
+    $found = @(Get-SourceSkill)
+    if ($found.Count -eq 0) { Fail 'no skills in the submodule (git submodule update --init)' }
+    foreach ($skill in $found) { Assert-SkillCopied $skill.Name }
+    foreach ($f in $SkillsUnmanaged) { Assert-Absent ".claude\skills\$f" }
 }
 
 function Test-Idempotent {
@@ -248,42 +229,8 @@ function Test-Idempotent {
     $out = Invoke-Chezmoi apply
     # run_onchange_ scripts must not re-run when nothing they hash changed.
     if ($out -match 'handy: installing') { Fail 'install-handy re-ran on an unchanged source' }
-    if ($out -match '(?m)^(link|relink|prune) ') { Fail 'junction script changed something on a re-run' }
     # run_after_ scripts always count as pending, so compare files only.
     Invoke-Chezmoi verify --exclude scripts | Out-Null
-}
-
-function Test-AddSkill {
-    Section 'add a skill'
-    New-Skill $Clone 'zz-ci-added'
-    Invoke-Chezmoi apply | Out-Null
-    Assert-Junction 'zz-ci-added'
-}
-
-function Test-PruneSkill {
-    Section 'remove that skill'
-    Remove-Item -Recurse -Force (Join-Path $Clone 'zz-ci-added')
-    Assert-Reported (Invoke-Chezmoi apply) 'prune\s+zz-ci-added \(was -> .*zz-ci-added\)'
-    Assert-Absent '.claude\skills\zz-ci-added'
-}
-
-function Test-Relink {
-    Section 'relink a junction pointing elsewhere'
-    $name = (Get-RepoSkill | Select-Object -First 1).Name
-    $elsewhere = Set-JunctionElsewhere $name
-    Assert-Reported (Invoke-Chezmoi apply) "relink\s+$name \(was -> $([regex]::Escape($elsewhere))\)"
-    Assert-Junction $name
-    if (-not (Test-Path (Join-Path $elsewhere 'SKILL.md'))) { Fail 'relink damaged the old target' }
-}
-
-function Test-SkipRealDirectory {
-    Section 'leave a real directory in the way alone'
-    New-Skill $Clone 'zz-ci-blocked'
-    $blocker = New-Blocker 'zz-ci-blocked'
-    Assert-Reported (Invoke-Chezmoi apply) 'SKIP\s+zz-ci-blocked'
-    if ((Get-Entry $blocker).LinkType) { Fail 'real directory was replaced by a link' }
-    if (-not (Test-Path (Join-Path $blocker 'mine.txt'))) { Fail 'real directory contents lost' }
-    Remove-Item -Recurse -Force (Join-Path $Clone 'zz-ci-blocked'), $blocker
 }
 
 # install-packages must render as valid PowerShell that installs every package.
@@ -340,9 +287,9 @@ function Test-TerminalFragment {
 
 # --- main ---------------------------------------------------------------
 
-$Steps = 'Initialize-ExistingDotfiles', 'Test-Bootstrap', 'Test-Backup', 'Test-Targets', 'Test-Gitconfig', 'Test-SkillJunctions',
-         'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-CmdRc', 'Test-TerminalFragment', 'Test-Idempotent', 'Test-SkillJunctions',
-         'Test-AddSkill', 'Test-PruneSkill', 'Test-Relink', 'Test-SkipRealDirectory'
+$Steps = 'Initialize-ExistingDotfiles', 'Test-Bootstrap', 'Test-Backup', 'Test-Targets', 'Test-Gitconfig', 'Test-Skills',
+         'Test-OldSkillJunction', 'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-CmdRc', 'Test-TerminalFragment',
+         'Test-Idempotent', 'Test-Skills'
 
 $saved = Save-Environment
 try {
