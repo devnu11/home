@@ -166,6 +166,18 @@ check_skills_branch_kept() {
 	assert_eq "branch: $(git -C "$clone" branch --show-current)" "branch: ci-work"
 }
 
+# `chezmoi diff` must name a skill link that apply would restore. (A clean
+# diff staying empty, hook included, is checked by check_idempotent.)
+check_skills_preview() {
+	section "claude-skills in chezmoi diff"
+	for link in "$FAKE_HOME"/.claude/skills/*; do [ -L "$link" ] && break; done
+	[ -L "$link" ] || { fail "no skill link to remove"; return; }
+	target=$(readlink "$link") && rm "$link"
+	chez diff --no-pager --exclude scripts | grep -q "^link .*${link##*/}" ||
+		fail "diff does not show the missing ${link##*/} link"
+	ln -s "$target" "$link"
+}
+
 # The commit .chezmoidata/claude-skills.yaml pins.
 skills_pin() {
 	sed -n 's/^ *commit: *//p' "$SRC/.chezmoidata/claude-skills.yaml"
@@ -355,6 +367,7 @@ check_idempotent
 check_claude_settings
 check_skill_links
 check_skills_branch_kept
+check_skills_preview
 check_karabiner
 check_existing_home
 check_work_home

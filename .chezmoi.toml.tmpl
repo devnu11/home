@@ -32,3 +32,10 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     lamaisonSshHostExpression = {{ $sshExpr | quote }}
     lamaisonPs1PwdBlue = {{ $pwdBlue | quote }}
     lamaisonPs1PwdCyan = {{ $pwdCyan | quote }}
+{{- if ne .chezmoi.os "windows" }}
+
+# `chezmoi diff` can't see the skill links install.sh makes; this prints them.
+[hooks.diff.post]
+    command = "sh"
+    args = [{{ joinPath .chezmoi.sourceDir "scripts/preview-claude-skills.sh" | quote }}]
+{{- end }}

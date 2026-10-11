@@ -264,14 +264,13 @@ HEAD). To take new skills, review the commits and bump that SHA. To develop
 skills in the clone, `git switch main` there first; a dirty clone makes the
 checkout fail rather than lose your changes.
 
-`chezmoi diff` can't show what that will do: it only sees the wrapper scripts,
-and `install.sh` lives in `~/code/claude-skills`, outside this repo. Before an
-apply, preview what the checkout brings in and what the links will do:
-
-```sh
-git -C ~/code/claude-skills log --oneline HEAD..<pinned sha>
-CLAUDE_SKILLS_DIR=~/.claude/skills ~/code/claude-skills/install.sh --dry-run
-```
+chezmoi's own diff only sees the wrapper scripts; `install.sh` lives in
+`~/code/claude-skills`, outside this repo. So on macOS and Linux, `chezmoi diff`
+ends with [`scripts/preview-claude-skills.sh`](scripts/preview-claude-skills.sh)
+(a `diff` hook in `.chezmoi.toml.tmpl`). It prints nothing when nothing would
+change; otherwise it shows the links `install.sh --dry-run` would add, change or
+remove, and, when the clone is not at the pin, the pinned commits it lacks.
+It runs `install.sh` from the clone as checked out, as the apply does.
 
 ## handy
 
