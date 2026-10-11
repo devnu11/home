@@ -267,8 +267,8 @@ git diff --submodule=log                  # the new commits; chezmoi diff shows 
 git commit -m "chore(skills): bump claude-skills to <sha>" -- private_dot_claude/exact_skills
 ```
 
-Develop skills in a separate clone, push, then bump. An edit made in
-`~/.claude/skills` is overwritten by the next apply.
+Fix skills in the submodule, not in `~/.claude/skills`: an edit there is
+overwritten by the next apply. See [Quick fixes upstream](#quick-fixes-upstream).
 
 Nothing here runs in another checkout of the skills repo. A machine set up
 before this used a clone at `~/code/claude-skills` with symlinks into it; that
@@ -292,6 +292,29 @@ The `run_onchange_after_install-handy` scripts do this automatically, and re-run
 only when `handy/pyproject.toml` changes. They skip with a message if `uv` isn't
 installed or the submodule isn't checked out, so they never fail an `apply`.
 Delete them if you'd rather install by hand.
+
+## Quick fixes upstream
+
+Both submodules are full clones of their repos, with `origin` set, so a fix
+can be made, pushed and pinned without another checkout:
+
+```sh
+cd ~/code/home/private_dot_claude/exact_skills   # or ~/code/home/handy
+git switch main                                  # once per fresh clone, see below
+# edit, test
+git commit -am "fix(...): ..." && git push
+cd ~/code/home
+git commit -m "chore(skills): bump claude-skills to <sha>" -- private_dot_claude/exact_skills
+```
+
+handy is installed `--editable` from its submodule, so an edit there is live at
+once. A skill edit reaches `~/.claude/skills` only on the next apply, so a
+half-finished change never alters what Claude is running.
+
+A fresh clone (`chezmoi init`, CI) leaves each submodule on a detached HEAD;
+`git switch main` puts it on the branch, and a commit made before that belongs
+to no branch. After that, `.gitmodules` sets `update = merge`, so
+`git submodule update --remote` fast-forwards `main` rather than detaching it.
 
 ## Day-to-day
 
