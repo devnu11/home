@@ -260,17 +260,33 @@ skills become instructions Claude follows, so a change to that repo should only
 reach a machine once it is named here. chezmoi never refreshes the external;
 `run_onchange_after_checkout-claude-skills` checks out the commit in
 [`.chezmoidata/claude-skills.yaml`](.chezmoidata/claude-skills.yaml) (detached
-HEAD). To take new skills, review the commits and bump that SHA. To develop
-skills in the clone, `git switch main` there first; a dirty clone makes the
-checkout fail rather than lose your changes.
+HEAD). To take new skills, review the commits, then pin and commit:
+
+```sh
+sh scripts/pin-claude-skills.sh [<commit>]   # default origin/main; refuses unpushed commits
+git commit -m "chore(skills): pin claude-skills to <sha>" -- .chezmoidata/claude-skills.yaml
+```
+
+To develop skills in the clone, `git switch main` there first; a dirty clone
+makes the checkout fail rather than lose your changes. A clean clone on a
+branch is not protected: the first apply after a pin change detaches it.
 
 chezmoi's own diff only sees the wrapper scripts; `install.sh` lives in
 `~/code/claude-skills`, outside this repo. So on macOS and Linux, `chezmoi diff`
 ends with [`scripts/preview-claude-skills.sh`](scripts/preview-claude-skills.sh)
-(a `diff` hook in `.chezmoi.toml.tmpl`). It prints nothing when nothing would
-change; otherwise it shows the links `install.sh --dry-run` would add, change or
-remove, and, when the clone is not at the pin, the pinned commits it lacks.
-It runs `install.sh` from the clone as checked out, as the apply does.
+(a `diff` hook in `.chezmoi.toml.tmpl`). It prints nothing when the clone is at
+the pin and no link would change. Otherwise it shows the checkout and the pin,
+whether the checkout contains the pin, the links `install.sh --dry-run` would
+add, change or remove, and the commands to pin and commit. It runs `install.sh`
+from the clone as checked out, as the apply does.
+
+`run_after_link-claude-skills` is listed in every diff because it runs on every
+apply. Since the preview already reports what it would do,
+[`scripts/diff-pager.sh`](scripts/diff-pager.sh) (`diff.pager`) drops it from
+the paged diff; `chezmoi diff --no-pager` still shows it. Only scripts in that
+filter's `HIDDEN` table are dropped, and each entry must name the diff hook that
+reports it (checked by `tests/apply_test.sh`). After pulling this change, run
+`chezmoi init` once so your config picks up `diff.pager`.
 
 ## handy
 
