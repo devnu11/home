@@ -81,7 +81,7 @@ MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell
 UNMANAGED='my.bashrc README.md LICENSE handy tests .github Documents .cmdrc.cmd .config/cmd AppData'
 
 # The claude-skills submodule, and the files of it that are not skills.
-SKILLS_SRC="$SRC/private_dot_claude/skills"
+SKILLS_SRC="$SRC/private_dot_claude/exact_skills"
 SKILLS_UNMANAGED='README.md LICENSE install.sh tests .github .team .claude'
 
 # key=value pairs the Unix gitconfig must hold.
@@ -300,6 +300,7 @@ check_existing_home() {
 	check_shared_bashrc
 	check_backup .gitconfig "$WORK_GITCONFIG"
 	check_old_skill_link
+	check_stray_skills
 	assert_eq "~/.profile: $(in_home bash -lc 'echo "${WORK_PROFILE:-unread}"' </dev/null)" "~/.profile: read"
 	assert_eq "bash -lc: $(path_head bash -lc)" "bash -lc: $FAKE_HOME/.local/bin"
 }
@@ -314,6 +315,7 @@ seed_existing_home() {
 	printf '%s\n' "$WORK_GITCONFIG" >"$FAKE_HOME/.gitconfig"
 	echo 'WORK_PROFILE=read' >"$FAKE_HOME/.profile"
 	seed_old_skill_link
+	seed_stray_skills
 }
 
 # ~/.claude/skills/<skill> as a symlink into a separate clone.
@@ -326,6 +328,27 @@ seed_old_skill_link() {
 }
 
 # Apply replaced that symlink with a copy and never wrote through it.
+# What exact_skills must keep (synced/) and delete, after a backup: a
+# hand-made skill, and a retired one still linked into the old clone.
+seed_stray_skills() {
+	skills="$FAKE_HOME/.claude/skills"
+	mkdir -p "$skills/synced" "$skills/zz-hand-made" "$WORK/old-clone/zz-retired"
+	echo keep >"$skills/synced/keep.txt"
+	echo mine >"$skills/zz-hand-made/SKILL.md"
+	echo retired >"$WORK/old-clone/zz-retired/SKILL.md"
+	ln -s "$WORK/old-clone/zz-retired" "$skills/zz-retired"
+}
+
+check_stray_skills() {
+	assert_file .claude/skills/synced/keep.txt
+	assert_absent .claude/skills/zz-hand-made
+	assert_absent .claude/skills/zz-retired
+	check_backup .claude/skills/zz-hand-made/SKILL.md mine
+	[ -L "$(echo "$FAKE_HOME"/.dotfiles-backup/*/.claude/skills/zz-retired)" ] ||
+		fail "zz-retired link not backed up as a link"
+	assert_eq "old clone: $(cat "$WORK/old-clone/zz-retired/SKILL.md")" "old clone: retired"
+}
+
 check_old_skill_link() {
 	assert_eq "old clone: $(cat "$WORK/old-clone/$OLD_SKILL/SKILL.md")" "old clone: old clone"
 	check_skill "$SKILLS_SRC/$OLD_SKILL"

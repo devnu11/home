@@ -1,0 +1,16 @@
+{{- $doomed := includeTemplate "doomed-skills" . | splitList "\n" | compact -}}
+{{ if and $doomed (eq .chezmoi.os "windows") -}}
+# Copy what this apply will delete from ~\.claude\skills (an exact_ folder)
+# into ~\.dotfiles-backup\<time>\. Renders empty, so chezmoi skips it, when
+# nothing is to be deleted.
+
+$skills = Join-Path '{{ .chezmoi.destDir }}' '.claude\skills'
+$backup = Join-Path '{{ .chezmoi.destDir }}' ".dotfiles-backup\$(Get-Date -Format 'yyyyMMdd-HHmmss')\.claude\skills"
+$names = @({{ range $i, $n := $doomed }}{{ if $i }}, {{ end }}'{{ $n }}'{{ end }})
+
+New-Item -ItemType Directory -Force -Path $backup | Out-Null
+foreach ($name in $names) {
+    Copy-Item -Recurse -LiteralPath (Join-Path $skills $name) -Destination $backup -ErrorAction Stop
+    Write-Host "backup: ~\.claude\skills\$name -> $backup\$name"
+}
+{{ end -}}

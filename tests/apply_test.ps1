@@ -16,7 +16,7 @@ $ErrorActionPreference = 'Stop'
 $Src = Split-Path -Parent $PSScriptRoot
 $Work = Join-Path ([IO.Path]::GetTempPath()) ([guid]::NewGuid().ToString())
 $FakeHome = Join-Path $Work 'home'
-$SkillsSrc = Join-Path $Src 'private_dot_claude\skills'
+$SkillsSrc = Join-Path $Src 'private_dot_claude\exact_skills'
 $OldClone = Join-Path $Work 'old-clone'
 $Skills = Join-Path $FakeHome '.claude\skills'
 $script:Failures = [Collections.Generic.List[string]]::new()
@@ -174,6 +174,23 @@ $WorkGitconfig = "[user]`n`temail = me@work.example"
 function Initialize-ExistingDotfiles {
     Set-Content -Path (Join-Path $FakeHome '.gitconfig') -Value $WorkGitconfig -NoNewline
     Initialize-OldSkillJunction
+    Initialize-StraySkills
+}
+
+# What exact_skills must keep (synced\) and delete after a backup (a hand-made skill).
+function Initialize-StraySkills {
+    New-Item -ItemType Directory -Path (Join-Path $Skills 'synced'), (Join-Path $Skills 'zz-hand-made') -Force | Out-Null
+    Set-Content -Path (Join-Path $Skills 'synced\keep.txt') -Value 'keep' -NoNewline
+    Set-Content -Path (Join-Path $Skills 'zz-hand-made\SKILL.md') -Value 'mine' -NoNewline
+}
+
+function Test-StraySkills {
+    Section 'exact_skills keeps synced, deletes strays after a backup'
+    Assert-File '.claude\skills\synced\keep.txt'
+    Assert-Absent '.claude\skills\zz-hand-made'
+    $copy = Get-ChildItem (Join-Path $FakeHome '.dotfiles-backup\*\.claude\skills\zz-hand-made\SKILL.md') -ErrorAction SilentlyContinue
+    if (-not $copy) { Fail 'no backup of zz-hand-made'; return }
+    Assert-Equal (Get-Content -Raw @($copy)[0].FullName) 'mine'
 }
 
 # A skill junctioned into a separate clone, as the old link script left it.
@@ -288,7 +305,7 @@ function Test-TerminalFragment {
 # --- main ---------------------------------------------------------------
 
 $Steps = 'Initialize-ExistingDotfiles', 'Test-Bootstrap', 'Test-Backup', 'Test-Targets', 'Test-Gitconfig', 'Test-Skills',
-         'Test-OldSkillJunction', 'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-CmdRc', 'Test-TerminalFragment',
+         'Test-OldSkillJunction', 'Test-StraySkills', 'Test-Packages', 'Test-Handy', 'Test-PowerShellProfile', 'Test-CmdRc', 'Test-TerminalFragment',
          'Test-Idempotent', 'Test-Skills'
 
 $saved = Save-Environment

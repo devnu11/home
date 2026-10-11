@@ -2,6 +2,6 @@
 	path = handy
 	url = https://github.com/devnu11/handy.git
 [submodule "private_dot_claude/skills"]
-	path = private_dot_claude/skills
+	path = private_dot_claude/exact_skills
 	url = https://github.com/devnu11/claude-skills.git
 	branch = main

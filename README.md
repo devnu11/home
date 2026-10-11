@@ -58,7 +58,8 @@ things soften that:
 | `private_dot_claude/CLAUDE.md` | `~/.claude/CLAUDE.md` | `private_` keeps `~/.claude` at mode 0700 |
 | `private_dot_claude/hooks/chezmoi-guard.sh` | `~/.claude/hooks/chezmoi-guard.sh` | Claude Code hook: sessions must ask before `chezmoi apply` and friends; see below |
 | `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
-| `private_dot_claude/skills/` | `~/.claude/skills/<name>/` | Claude skills, a submodule; each skill folder is copied, see below |
+| `private_dot_claude/exact_skills/` | `~/.claude/skills/<name>/` | Claude skills, a submodule; each skill folder is copied, see below |
+| `run_before_backup-claude-skills.{sh,ps1}.tmpl` | — | Backs up whatever an apply would delete from `~/.claude/skills` |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `private_dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
 | `run_onchange_after_enable-karabiner-rules.sh.tmpl` | — | Turns those rules on in Karabiner's selected profile |
@@ -234,15 +235,24 @@ someone who wants only one of them can take just that:
 | Repo | What |
 | --- | --- |
 | [devnu11/handy](https://github.com/devnu11/handy) | Python CLI tools, a git submodule at `handy/` |
-| [devnu11/claude-skills](https://github.com/devnu11/claude-skills) | Claude Code skills, a git submodule at `private_dot_claude/skills/` |
+| [devnu11/claude-skills](https://github.com/devnu11/claude-skills) | Claude Code skills, a git submodule at `private_dot_claude/exact_skills/` |
 
 ### Claude skills
 
 The skills submodule sits where chezmoi copies it to: each skill folder becomes
 `~/.claude/skills/<name>/`, like any other dotfile, so `chezmoi diff` shows
-every changed line of a skill. `synced/` and any hand-made skill folder there
-are left alone, and dot-folders such as `.github` and `.team` are skipped by
-chezmoi itself.
+every changed line of a skill. Dot-folders such as `.github` and `.team` are
+skipped by chezmoi itself.
+
+The folder is `exact_`: an apply deletes anything in `~/.claude/skills` the
+submodule has no folder for, so a skill removed upstream goes away too. Only
+`synced/` is kept, since `.chezmoiignore` leaves it out. A hand-made skill there
+is deleted as well, without a prompt; `chezmoi diff` lists each deletion first,
+and [`run_before_backup-claude-skills`](run_before_backup-claude-skills.sh.tmpl)
+copies everything about to go to `~/.dotfiles-backup/<time>/.claude/skills/`.
+That script renders empty, and so stays out of the diff, when nothing would be
+deleted. `exact_` covers only the top level: a skill's own folder may gain files
+(a runner's `.venv`, say) without them being removed.
 
 chezmoi reads meaning into source filenames (`dot_`, `private_`, `run_`,
 `executable_`, a `.tmpl` suffix), and inside the submodule that applies too.
@@ -252,9 +262,9 @@ or templated on apply, and would show up in `chezmoi diff` first.
 The submodule commit is the pin; it tracks `main`. To take new skills:
 
 ```sh
-git submodule update --remote private_dot_claude/skills
+git submodule update --remote private_dot_claude/exact_skills
 git diff --submodule=log                  # the new commits; chezmoi diff shows the files
-git commit -m "chore(skills): bump claude-skills to <sha>" -- private_dot_claude/skills
+git commit -m "chore(skills): bump claude-skills to <sha>" -- private_dot_claude/exact_skills
 ```
 
 Develop skills in a separate clone, push, then bump. An edit made in

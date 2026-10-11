@@ -24,7 +24,7 @@ Before asking me to approve one:
 3. For every script `chezmoi status` lists (`R`), say what it will do, since
    `chezmoi diff` shows only its text.
 4. Never run anything in another local repo, such as `~/code/claude-skills`;
-   the skills come from the `private_dot_claude/skills` submodule.
+   the skills come from the `private_dot_claude/exact_skills` submodule.
 
 Test in a throwaway HOME (e.g. `HOME=$(mktemp -d)` with `chezmoi --source`)
 instead. Never route one of these commands through a script file or another

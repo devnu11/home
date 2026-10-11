@@ -1,0 +1,16 @@
+{{- $doomed := includeTemplate "doomed-skills" . | splitList "\n" | compact -}}
+{{ if and $doomed (ne .chezmoi.os "windows") -}}
+#!/bin/sh
+# Copy what this apply will delete from ~/.claude/skills (an exact_ folder)
+# into ~/.dotfiles-backup/<time>/. Renders empty, so chezmoi skips it, when
+# nothing is to be deleted. Links are copied as links, never followed.
+
+SKILLS="{{ .chezmoi.destDir }}/.claude/skills"
+BACKUP="{{ .chezmoi.destDir }}/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)/.claude/skills"
+
+mkdir -p "$BACKUP" || exit 1
+for name in{{ range $doomed }} {{ . | quote }}{{ end }}; do
+	cp -RP "$SKILLS/$name" "$BACKUP/" || exit 1
+	echo "backup: ~/.claude/skills/$name -> $BACKUP/$name"
+done
+{{ end -}}

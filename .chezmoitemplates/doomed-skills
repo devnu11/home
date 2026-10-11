@@ -1,0 +1,12 @@
+{{- /*
+  Names in ~/.claude/skills that the next apply deletes, one per line:
+  exact_skills removes every entry the submodule has no folder for. `synced`
+  is kept, as .chezmoiignore leaves it out; keep the two lists in step.
+*/ -}}
+{{- $src := joinPath .chezmoi.sourceDir "private_dot_claude/exact_skills" -}}
+{{- range glob (joinPath .chezmoi.destDir ".claude/skills/*") -}}
+{{-   $name := base . -}}
+{{-   if and (ne $name "synced") (not (stat (joinPath $src $name))) }}
+{{ $name }}
+{{-   end -}}
+{{- end -}}
