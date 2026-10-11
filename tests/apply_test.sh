@@ -5,12 +5,10 @@
 # would (init with canned prompt answers, then apply), checks what landed, and
 # checks that a second apply changes nothing. Nothing touches the real home:
 # HOME points at a scratch directory for every command, so chezmoi's config and
-# state, the claude-skills clone, and anything `uv tool install` writes all
-# land there.
+# state, and anything `uv tool install` writes, land there.
 #
-# Needs chezmoi and git on PATH, the handy submodule checked out, and network
-# access (the claude-skills external is cloned from GitHub). zsh and uv are
-# optional: their checks are skipped when absent.
+# Needs chezmoi and git on PATH and the handy and claude-skills submodules
+# checked out. zsh and uv are optional: their checks are skipped when absent.
 #
 #     sh tests/apply_test.sh
 
@@ -82,6 +80,10 @@ MANAGED='.gitconfig .shell/env.sh .shell/interactive.sh .shell/aliases.sh .shell
 # Source-dir furniture and Windows-only files stay out of ~.
 UNMANAGED='my.bashrc README.md LICENSE handy tests .github Documents .cmdrc.cmd .config/cmd AppData'
 
+# The claude-skills submodule, and the files of it that are not skills.
+SKILLS_SRC="$SRC/private_dot_claude/skills"
+SKILLS_UNMANAGED='README.md LICENSE install.sh tests .github .team .claude'
+
 # key=value pairs the Unix gitconfig must hold.
 GIT_VALUES='user.name=CI Test
 user.email=ci@example.com
@@ -144,90 +146,32 @@ check_gitconfig() {
 	[ -z "$(git config -f "$FAKE_HOME/.gitconfig" diff.tool)" ] || fail "Windows diff.tool leaked into Unix gitconfig"
 }
 
-check_skill_links() {
-	section "claude-skills links"
-	clone="$FAKE_HOME/code/claude-skills"
-	[ -x "$clone/install.sh" ] || { fail "external not cloned to ~/code/claude-skills"; return; }
-	assert_eq "pin: $(git -C "$clone" rev-parse HEAD)" "pin: $(skills_pin)"
-	set -- "$clone"/*/SKILL.md
-	[ -f "$1" ] || fail "no skills found in the claude-skills clone"
-	for manifest; do
-		[ -f "$manifest" ] && check_skill_link "${manifest%/SKILL.md}"
-	done
+# Skills from the submodule: each folder holding a SKILL.md lands in
+# ~/.claude/skills as a real folder; the submodule's own furniture does not.
+check_skills() {
+	section "claude-skills"
+	set -- "$SKILLS_SRC"/*/SKILL.md
+	[ -f "$1" ] || { fail "no skills in the submodule (git submodule update --init)"; return; }
+	for manifest; do check_skill "${manifest%/SKILL.md}"; done
+	for f in $SKILLS_UNMANAGED; do assert_absent ".claude/skills/$f"; done
 }
 
-# A clone already at the pin keeps its branch: checkout must not detach it.
-check_skills_branch_kept() {
-	section "claude-skills branch kept at the pin"
-	clone="$FAKE_HOME/code/claude-skills"
-	git -C "$clone" switch -q -c ci-work || { fail "could not create a branch"; return; }
-	script=$(chez execute-template "$(cat "$SRC/run_onchange_after_checkout-claude-skills.sh.tmpl")")
-	in_home sh -c "$script" >/dev/null || fail "checkout script: exit $?"
-	assert_eq "branch: $(git -C "$clone" branch --show-current)" "branch: ci-work"
+# Skill folder $1 of the submodule must be copied, not linked, into ~.
+check_skill() {
+	dest="$FAKE_HOME/.claude/skills/${1##*/}"
+	[ ! -L "$dest" ] || { fail "$dest is a symlink"; return; }
+	cmp -s "$1/SKILL.md" "$dest/SKILL.md" || fail "$dest/SKILL.md differs from the submodule"
 }
 
-# `chezmoi diff` must name a skill link that apply would restore. (A clean
-# diff staying empty, hook included, is checked by check_idempotent.)
-check_skills_preview() {
+# An edited skill file shows up in `chezmoi diff`, line by line.
+check_skills_in_diff() {
 	section "claude-skills in chezmoi diff"
-	for link in "$FAKE_HOME"/.claude/skills/*; do [ -L "$link" ] && break; done
-	[ -L "$link" ] || { fail "no skill link to remove"; return; }
-	target=$(readlink "$link") && rm "$link"
-	chez diff --no-pager --exclude scripts | grep -q "^ *link .*${link##*/}" ||
-		fail "diff does not show the missing ${link##*/} link"
-	ln -s "$target" "$link"
-}
-
-# The diff pager hides only the scripts in its HIDDEN table, and each one must
-# name a diff hook that is wired up to report what the script would do.
-check_diff_pager() {
-	section "diff pager hides only reported scripts"
-	hidden=$(sed -n 's/^HIDDEN="\(.*\)"$/\1/p' "$SRC/scripts/diff-pager.sh")
-	[ -n "$hidden" ] || fail "no HIDDEN table in diff-pager.sh"
-	for entry in $hidden; do check_hidden_entry "${entry%%:*}" "${entry#*:}"; done
-	chez diff --no-pager | grep -q '^diff --git a/link-claude-skills.sh' ||
-		fail "--no-pager diff lost the link script"
-	! chez diff | grep -q '^diff --git a/link-claude-skills.sh' ||
-		fail "paged diff still shows the link script"
-}
-
-# Script $1 may be hidden only when it exists and hook $2 is a diff hook.
-check_hidden_entry() {
-	set -- "$1" "$2" "$SRC"/run_*"$1".tmpl
-	[ -f "$3" ] || fail "hidden script $1 has no run_ source"
-	if ! sed -n '/^\[hooks\.diff\./,/^\[/p' "$SRC/.chezmoi.toml.tmpl" | grep -q "scripts/$2"; then
-		fail "hidden script $1: $2 is not a diff hook"
-	fi
-}
-
-# pin-claude-skills.sh writes the pin, and refuses a commit origin lacks.
-# It runs on a copy of the source so this repo's pin is untouched.
-check_pin_script() {
-	section "pin-claude-skills"
-	copy="$WORK/pin-src" clone="$FAKE_HOME/code/claude-skills"
-	mkdir -p "$copy/scripts" "$copy/.chezmoidata"
-	cp "$SRC/scripts/pin-claude-skills.sh" "$copy/scripts/"
-	cp "$SRC/.chezmoidata/claude-skills.yaml" "$copy/.chezmoidata/"
-	pin_with() { in_home env CLAUDE_SKILLS_REPO="$clone" sh "$copy/scripts/pin-claude-skills.sh" "$@"; }
-	pin_with >/dev/null || fail "pinning origin/main: exit $?"
-	assert_eq "pin: $(sed -n 's/^ *commit: *//p' "$copy/.chezmoidata/claude-skills.yaml")" \
-		"pin: $(git -C "$clone" rev-parse origin/main)"
-	git -C "$clone" -c user.name=ci -c user.email=ci@example.com \
-		commit -q --allow-empty -m "local only"
-	! pin_with HEAD 2>/dev/null || fail "pinned a commit that is on no origin branch"
-	git -C "$clone" reset -q --hard HEAD~1
-}
-
-# The commit .chezmoidata/claude-skills.yaml pins.
-skills_pin() {
-	sed -n 's/^ *commit: *//p' "$SRC/.chezmoidata/claude-skills.yaml"
-}
-
-# ~/.claude/skills/<name> must be a symlink to the skill directory $1.
-check_skill_link() {
-	link="$FAKE_HOME/.claude/skills/$(basename "$1")"
-	[ -L "$link" ] || { fail "$link is not a symlink"; return; }
-	assert_eq "$(readlink "$link")" "$1"
+	set -- "$SKILLS_SRC"/*/SKILL.md
+	name=${1%/SKILL.md} name=${name##*/}
+	echo 'local edit' >>"$FAKE_HOME/.claude/skills/$name/SKILL.md"
+	chez diff --no-pager | grep -q '^-local edit' ||
+		fail "diff does not show the edit to $name/SKILL.md"
+	cp "$1" "$FAKE_HOME/.claude/skills/$name/SKILL.md"
 }
 
 # install-packages must render as valid sh that installs this OS's packages.
@@ -332,12 +276,12 @@ check_idempotent() {
 check_no_script_acted() {
 	! grep -q 'handy: installing' "$1" || fail "install-handy re-ran on an unchanged source"
 	! grep -q 'karabiner: enabled' "$1" || fail "enable-karabiner-rules re-ran on unchanged rules"
-	! grep -Eq '^(link|relink|prune) ' "$1" || fail "link script changed something on a re-run"
 }
 
 # A machine with dotfiles already: a team-shared ~/.bashrc symlink, a work
-# ~/.gitconfig, and a ~/.profile that login bash must still read. Run in a second scratch home so the checks above still
-# see a clean machine.
+# ~/.gitconfig, a ~/.profile that login bash must still read, and a skill
+# symlinked into another clone, as the old install.sh linking left them. Run in
+# a second scratch home so the checks above still see a clean machine.
 check_existing_home() {
 	section "existing dotfiles"
 	FAKE_HOME="$WORK/existing"
@@ -345,6 +289,7 @@ check_existing_home() {
 	bootstrap
 	check_shared_bashrc
 	check_backup .gitconfig "$WORK_GITCONFIG"
+	check_old_skill_link
 	assert_eq "~/.profile: $(in_home bash -lc 'echo "${WORK_PROFILE:-unread}"' </dev/null)" "~/.profile: read"
 	assert_eq "bash -lc: $(path_head bash -lc)" "bash -lc: $FAKE_HOME/.local/bin"
 }
@@ -358,6 +303,22 @@ seed_existing_home() {
 	ln -s "$WORK/shared/bashrc" "$FAKE_HOME/.bashrc"
 	printf '%s\n' "$WORK_GITCONFIG" >"$FAKE_HOME/.gitconfig"
 	echo 'WORK_PROFILE=read' >"$FAKE_HOME/.profile"
+	seed_old_skill_link
+}
+
+# ~/.claude/skills/<skill> as a symlink into a separate clone.
+seed_old_skill_link() {
+	set -- "$SKILLS_SRC"/*/SKILL.md
+	OLD_SKILL=${1%/SKILL.md} OLD_SKILL=${OLD_SKILL##*/}
+	mkdir -p "$WORK/old-clone/$OLD_SKILL" "$FAKE_HOME/.claude/skills"
+	echo 'old clone' >"$WORK/old-clone/$OLD_SKILL/SKILL.md"
+	ln -s "$WORK/old-clone/$OLD_SKILL" "$FAKE_HOME/.claude/skills/$OLD_SKILL"
+}
+
+# Apply replaced that symlink with a copy and never wrote through it.
+check_old_skill_link() {
+	assert_eq "old clone: $(cat "$WORK/old-clone/$OLD_SKILL/SKILL.md")" "old clone: old clone"
+	check_skill "$SKILLS_SRC/$OLD_SKILL"
 }
 
 check_shared_bashrc() {
@@ -396,7 +357,7 @@ bootstrap
 check_targets
 check_claude_settings
 check_gitconfig
-check_skill_links
+check_skills
 check_packages
 check_karabiner
 check_handy
@@ -405,11 +366,7 @@ check_shell zsh
 check_brew_after_system
 check_idempotent
 check_claude_settings
-check_skill_links
-check_skills_branch_kept
-check_skills_preview
-check_diff_pager
-check_pin_script
+check_skills_in_diff
 check_karabiner
 check_existing_home
 check_work_home
