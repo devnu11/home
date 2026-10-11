@@ -7,7 +7,12 @@
 {{- $email := promptStringOnce . "email" "Email address for git commits" $defaultEmail -}}
 {{- /* Shell settings, written to ~/.shell/lamaison.sh as LAMAISON_* variables. */ -}}
 {{- $username := promptStringOnce . "lamaisonDefaultUsername" "Your username (shown as 'me' in the prompt)" .chezmoi.username -}}
-{{- $hostname := promptStringOnce . "lamaisonDefaultHostname" "Usual machine, shown grey in the prompt" .chezmoi.hostname -}}
+{{- /* The name the prompt shows: LocalHostName on macOS, see interactive.sh. */ -}}
+{{- $machine := .chezmoi.hostname -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $machine = output "scutil" "--get" "LocalHostName" | trim -}}
+{{- end -}}
+{{- $hostname := promptStringOnce . "lamaisonDefaultHostname" "Usual machine, shown grey in the prompt" $machine -}}
 {{- $sshHost  := promptStringOnce . "lamaisonSshDefaultHost" "Host for a bare `ssh` (blank for none)" "" -}}
 {{- $sshExpr  := promptStringOnce . "lamaisonSshHostExpression" "printf pattern turning a bare ssh number into a host, e.g. box%02d (blank for none)" "" -}}
 {{- $pwdBlue  := promptStringOnce . "lamaisonPs1PwdBlue" "Directory shown blue in the prompt (blank for none)" "" -}}

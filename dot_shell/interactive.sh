@@ -43,9 +43,9 @@ EMOJI_ENRAGED="😡"
 # One builder for both shells. They differ only in how a prompt marks
 # non-printing text (bash \[ \], zsh %{ %}) and spells user/host/directory.
 if [ -n "$ZSH_VERSION" ]; then
-	__P_OPEN='%{' __P_CLOSE='%}' __P_USER='%n' __P_HOST='%m' __P_DIR='%1~'
+	__P_OPEN='%{' __P_CLOSE='%}' __P_USER='%n' __P_DIR='%1~'
 else
-	__P_OPEN='\[' __P_CLOSE='\]' __P_USER='\u' __P_HOST='\h' __P_DIR='\W'
+	__P_OPEN='\[' __P_CLOSE='\]' __P_USER='\u' __P_DIR='\W'
 fi
 
 # Append $2 to __PROMPT in colour $1.
@@ -86,13 +86,25 @@ __prompt_user() {
 	esac
 }
 
-# Hostnames are compared without their domain (bash may report foo.local).
+# This machine's name, without its domain. macOS's hostname follows the
+# network (DHCP, reverse DNS), so it uses LocalHostName (System Settings >
+# Sharing) instead, which stays put.
+__machine_name() {
+	local name
+	if command -v scutil >/dev/null 2>&1; then
+		name=$(scutil --get LocalHostName 2>/dev/null)
+	fi
+	name=${name:-${HOSTNAME:-$HOST}}
+	printf '%s\n' "${name%%.*}"
+}
+# Read once: scutil is a subprocess, too slow to run for every prompt.
+__MACHINE_NAME=$(__machine_name)
+
 __prompt_host() {
-	local host=${HOSTNAME:-$HOST}
-	case ${host%%.*} in
-		"${LAMAISON_DEFAULT_HOSTNAME%%.*}") __prompt_add "$COLOR_DARKGRAY" "@$__P_HOST" ;;
-		homeassistant) __prompt_add "$COLOR_MAGENTA" "@$__P_HOST" ;;
-		*) __prompt_add "$COLOR_RED" "@$__P_HOST" ;;
+	case $__MACHINE_NAME in
+		"${LAMAISON_DEFAULT_HOSTNAME%%.*}") __prompt_add "$COLOR_DARKGRAY" "@$__MACHINE_NAME" ;;
+		homeassistant) __prompt_add "$COLOR_MAGENTA" "@$__MACHINE_NAME" ;;
+		*) __prompt_add "$COLOR_RED" "@$__MACHINE_NAME" ;;
 	esac
 }
 
