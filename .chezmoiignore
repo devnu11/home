@@ -16,6 +16,9 @@ tests
 .claude/skills/LICENSE
 .claude/skills/install.sh
 .claude/skills/tests
+# A skill's own tests are not needed to use it, and they hold empty
+# __init__.py files, which chezmoi would silently skip.
+.claude/skills/*/runner/tests
 
 {{ if ne .chezmoi.os "windows" }}
 # PowerShell profiles and the cmd.exe setup are Windows-only.

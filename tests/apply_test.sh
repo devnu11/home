@@ -154,6 +154,16 @@ check_skills() {
 	[ -f "$1" ] || { fail "no skills in the submodule (git submodule update --init)"; return; }
 	for manifest; do check_skill "${manifest%/SKILL.md}"; done
 	for f in $SKILLS_UNMANAGED; do assert_absent ".claude/skills/$f"; done
+	check_no_dropped_empty_files
+}
+
+# chezmoi never creates an empty file, so one inside a copied folder would go
+# missing without a word. Each must sit in a folder .chezmoiignore leaves out.
+check_no_dropped_empty_files() {
+	git -C "$SKILLS_SRC" ls-files | while read -r f; do
+		[ -s "$SKILLS_SRC/$f" ] || [ ! -d "$FAKE_HOME/.claude/skills/${f%/*}" ] ||
+			fail "empty skills file $f is skipped; ignore its folder or give it content"
+	done
 }
 
 # Skill folder $1 of the submodule must be copied, not linked, into ~.
