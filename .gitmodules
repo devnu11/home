@@ -1,7 +1,10 @@
 [submodule "handy"]
 	path = handy
 	url = https://github.com/devnu11/handy.git
+	branch = main
+	update = merge
 [submodule "private_dot_claude/skills"]
 	path = private_dot_claude/exact_skills
 	url = https://github.com/devnu11/claude-skills.git
 	branch = main
+	update = merge
