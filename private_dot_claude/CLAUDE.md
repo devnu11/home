@@ -65,6 +65,10 @@ Before you start, make sure there is no uncommitted untracked changes.
 - Name functions with verbs. Only accessor properties are nouns; where the
   language has no properties, name the accessor `get_<noun>` (in the
   language's casing).
+- Use whole words for names, not abbreviations or single letters. Use an
+  acronym only when it is better known than its expansion (`MMIO`, `PCI`).
+- Don't make a variable that only aliases another expression (`rt =
+  self.runtime`) unless it dramatically improves readability.
 - No code in the global scope. A module or script's top level holds only
   imports, constants and definitions. The work goes in a single entry
   function, `main` (or `just_do_it` / `justDoIt` / `JustDoIt` in the language's
