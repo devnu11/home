@@ -173,9 +173,49 @@ check_skills_preview() {
 	for link in "$FAKE_HOME"/.claude/skills/*; do [ -L "$link" ] && break; done
 	[ -L "$link" ] || { fail "no skill link to remove"; return; }
 	target=$(readlink "$link") && rm "$link"
-	chez diff --no-pager --exclude scripts | grep -q "^link .*${link##*/}" ||
+	chez diff --no-pager --exclude scripts | grep -q "^ *link .*${link##*/}" ||
 		fail "diff does not show the missing ${link##*/} link"
 	ln -s "$target" "$link"
+}
+
+# The diff pager hides only the scripts in its HIDDEN table, and each one must
+# name a diff hook that is wired up to report what the script would do.
+check_diff_pager() {
+	section "diff pager hides only reported scripts"
+	hidden=$(sed -n 's/^HIDDEN="\(.*\)"$/\1/p' "$SRC/scripts/diff-pager.sh")
+	[ -n "$hidden" ] || fail "no HIDDEN table in diff-pager.sh"
+	for entry in $hidden; do check_hidden_entry "${entry%%:*}" "${entry#*:}"; done
+	chez diff --no-pager | grep -q '^diff --git a/link-claude-skills.sh' ||
+		fail "--no-pager diff lost the link script"
+	! chez diff | grep -q '^diff --git a/link-claude-skills.sh' ||
+		fail "paged diff still shows the link script"
+}
+
+# Script $1 may be hidden only when it exists and hook $2 is a diff hook.
+check_hidden_entry() {
+	set -- "$1" "$2" "$SRC"/run_*"$1".tmpl
+	[ -f "$3" ] || fail "hidden script $1 has no run_ source"
+	if ! sed -n '/^\[hooks\.diff\./,/^\[/p' "$SRC/.chezmoi.toml.tmpl" | grep -q "scripts/$2"; then
+		fail "hidden script $1: $2 is not a diff hook"
+	fi
+}
+
+# pin-claude-skills.sh writes the pin, and refuses a commit origin lacks.
+# It runs on a copy of the source so this repo's pin is untouched.
+check_pin_script() {
+	section "pin-claude-skills"
+	copy="$WORK/pin-src" clone="$FAKE_HOME/code/claude-skills"
+	mkdir -p "$copy/scripts" "$copy/.chezmoidata"
+	cp "$SRC/scripts/pin-claude-skills.sh" "$copy/scripts/"
+	cp "$SRC/.chezmoidata/claude-skills.yaml" "$copy/.chezmoidata/"
+	pin_with() { in_home env CLAUDE_SKILLS_REPO="$clone" sh "$copy/scripts/pin-claude-skills.sh" "$@"; }
+	pin_with >/dev/null || fail "pinning origin/main: exit $?"
+	assert_eq "pin: $(sed -n 's/^ *commit: *//p' "$copy/.chezmoidata/claude-skills.yaml")" \
+		"pin: $(git -C "$clone" rev-parse origin/main)"
+	git -C "$clone" -c user.name=ci -c user.email=ci@example.com \
+		commit -q --allow-empty -m "local only"
+	! pin_with HEAD 2>/dev/null || fail "pinned a commit that is on no origin branch"
+	git -C "$clone" reset -q --hard HEAD~1
 }
 
 # The commit .chezmoidata/claude-skills.yaml pins.
@@ -368,6 +408,8 @@ check_claude_settings
 check_skill_links
 check_skills_branch_kept
 check_skills_preview
+check_diff_pager
+check_pin_script
 check_karabiner
 check_existing_home
 check_work_home
