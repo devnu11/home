@@ -174,6 +174,44 @@ check_skill() {
 }
 
 # An edited skill file shows up in `chezmoi diff`, line by line.
+# What a skill's runner leaves behind as it runs: uv's environment, and test,
+# lint and coverage output. None of it is in the source.
+RUNNER_ARTIFACTS='.venv/bin/python .pytest_cache/CACHEDIR.TAG .ruff_cache/CACHEDIR.TAG .coverage htmlcov/index.html __pycache__/cli.cpython-312.pyc'
+
+# Runner artifacts must stay out of status, survive an apply untouched, and
+# never be copied into a backup.
+check_runner_artifacts() {
+	section "claude-skills runner artifacts"
+	for_each_runner seed_artifacts
+	! chez status | grep -Eq '\.venv|_cache|\.coverage|htmlcov|__pycache__' ||
+		fail "status lists runner artifacts"
+	chez apply || fail "apply with runner artifacts: exit $?"
+	for_each_runner check_artifacts
+	[ -z "$(find "$FAKE_HOME/.dotfiles-backup" -name .venv 2>/dev/null)" ] ||
+		fail "a runner's .venv was backed up"
+}
+
+# Run $1 on ~/.claude/skills/<skill>/runner for each skill with a runner.
+for_each_runner() {
+	for runner in "$SKILLS_SRC"/*/runner; do
+		[ -d "$runner" ] || continue
+		skill=${runner%/runner} skill=${skill##*/}
+		"$1" "$FAKE_HOME/.claude/skills/$skill/runner"
+	done
+}
+
+seed_artifacts() {
+	for f in $RUNNER_ARTIFACTS; do
+		mkdir -p "$1/$(dirname "$f")" && echo artifact >"$1/$f"
+	done
+}
+
+check_artifacts() {
+	for f in $RUNNER_ARTIFACTS; do
+		assert_eq "${1##*/.claude/}/$f: $(cat "$1/$f" 2>/dev/null)" "${1##*/.claude/}/$f: artifact"
+	done
+}
+
 check_skills_in_diff() {
 	section "claude-skills in chezmoi diff"
 	set -- "$SKILLS_SRC"/*/SKILL.md
@@ -400,6 +438,7 @@ check_brew_after_system
 check_idempotent
 check_claude_settings
 check_skills_in_diff
+check_runner_artifacts
 check_karabiner
 check_existing_home
 check_work_home
