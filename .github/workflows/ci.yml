@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: shellcheck
-        run: shellcheck -s sh tests/*.sh scripts/*.sh private_dot_claude/hooks/*.sh
+        run: shellcheck -s sh tests/*.sh private_dot_claude/hooks/*.sh
       - name: chezmoi guard hook
         run: sh tests/claude_guard_test.sh
 
@@ -49,7 +49,6 @@ jobs:
       - name: apply test
         run: sh tests/apply_test.sh
 
-  # Includes the junction logic in run_after_link-claude-skills.ps1.tmpl.
   apply-windows:
     runs-on: windows-latest
     steps:
