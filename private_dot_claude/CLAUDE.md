@@ -61,6 +61,11 @@ Before you start, make sure there is no uncommitted untracked changes.
 - A large case / if-elif-else chain may exceed the length limit, but it should
   then be the only thing its function does.
 - Keep functions to at most 2 parameters; constructors and similar are exceptions.
+- No code in the global scope. A module or script's top level holds only
+  imports, constants and definitions. The work goes in a single entry
+  function, `main` (or `just_do_it` / `justDoIt` / `JustDoIt` in the language's
+  casing when "main" doesn't fit), called from the entry guard, e.g.
+  `if __name__ == "__main__": main()` in Python.
 - Prefer rewriting unclear code over explaining it with comments.
 - Doc comments on public APIs use the language's standard format (Doxygen,
   JSDoc, docstrings, etc.) and stay brief.
