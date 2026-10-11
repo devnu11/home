@@ -38,4 +38,8 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
 [hooks.diff.post]
     command = "sh"
     args = [{{ joinPath .chezmoi.sourceDir "scripts/preview-claude-skills.sh" | quote }}]
+
+# Drops scripts a diff hook already reports (see scripts/diff-pager.sh).
+[diff]
+    pager = {{ printf "sh %s" (joinPath .chezmoi.sourceDir "scripts/diff-pager.sh") | quote }}
 {{- end }}
