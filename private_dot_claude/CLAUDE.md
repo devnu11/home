@@ -60,7 +60,11 @@ Before you start, make sure there is no uncommitted untracked changes.
   and error handling. Split when a function does more than one thing.
 - A large case / if-elif-else chain may exceed the length limit, but it should
   then be the only thing its function does.
-- Keep functions to at most 2 parameters; constructors and similar are exceptions.
+- Keep functions to at most 2 parameters. Constructors and factories (functions
+  that only build and return an object) are exempt.
+- Name functions with verbs. Only accessor properties are nouns; where the
+  language has no properties, name the accessor `get_<noun>` (in the
+  language's casing).
 - No code in the global scope. A module or script's top level holds only
   imports, constants and definitions. The work goes in a single entry
   function, `main` (or `just_do_it` / `justDoIt` / `JustDoIt` in the language's
