@@ -1,7 +1,9 @@
 {{ if eq .chezmoi.os "windows" -}}
 # Before the first apply on this machine, copy every dotfile chezmoi may
-# replace into ~\.dotfiles-backup\<time>\. run_once_: it never runs again.
-# Targets come from .chezmoidata/existing.yaml.
+# replace into ~\.dotfiles-backup\<time>\. Targets come from
+# .chezmoidata/existing.yaml. run_once_ runs again whenever this script's
+# rendered text changes, so editing that list takes a fresh backup; earlier
+# backups are never removed.
 
 $dest = '{{ .chezmoi.destDir }}'
 $backup = Join-Path $dest ".dotfiles-backup\$(Get-Date -Format 'yyyyMMdd-HHmmss')"
