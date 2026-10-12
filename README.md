@@ -60,6 +60,7 @@ things soften that:
 | `private_dot_claude/modify_settings.json` | `~/.claude/settings.json` | Merges that hook in; Claude Code's own settings are kept |
 | `private_dot_claude/exact_skills/` | `~/.claude/skills/<name>/` | Claude skills, a submodule; each skill folder is copied, see below |
 | `run_before_backup-claude-skills.{sh,ps1}.tmpl` | — | Backs up whatever an apply would delete from `~/.claude/skills` |
+| `run_before_unlink-skill-junctions.ps1.tmpl` | — | Windows: removes the old skill junctions, which chezmoi cannot replace (the folders they point to are untouched) |
 | `run_onchange_after_install-handy.{sh,ps1}.tmpl` | — | Installs `handy` onto PATH; see below |
 | `private_dot_config/karabiner/assets/complex_modifications/*.json` | `~/.config/karabiner/…` | macOS only; Karabiner-Elements rules, see below |
 | `run_onchange_after_enable-karabiner-rules.sh.tmpl` | — | Turns those rules on in Karabiner's selected profile |

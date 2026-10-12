@@ -1,0 +1,27 @@
+{{- /*
+  Junctions in ~\.claude\skills, as the old link script made them. chezmoi
+  cannot replace a junction ("unsupported file type"), so they go first.
+  lstat reports one as neither file, dir nor symlink. Renders empty, so
+  chezmoi skips it, when there are none. Runs after backup-claude-skills
+  (scripts run in name order), which copies any it would delete.
+*/ -}}
+{{- $junctions := list -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   range glob (joinPath .chezmoi.destDir ".claude/skills/*") -}}
+{{-     if not (has (lstat .).type (list "file" "dir" "symlink")) -}}
+{{-       $junctions = append $junctions (regexReplaceAll `.*[/\\]` . "") -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+{{ if $junctions -}}
+# Remove the junctions in ~\.claude\skills so chezmoi can put copies there.
+# Deleting a junction removes only the link, never the folder it points to.
+
+$skills = Join-Path '{{ .chezmoi.destDir }}' '.claude\skills'
+$names = @({{ range $i, $n := $junctions }}{{ if $i }}, {{ end }}'{{ $n }}'{{ end }})
+
+foreach ($name in $names) {
+    [IO.Directory]::Delete((Join-Path $skills $name), $false)
+    Write-Host "unlink: ~\.claude\skills\$name"
+}
+{{ end -}}
