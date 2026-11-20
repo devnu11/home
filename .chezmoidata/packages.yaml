@@ -15,6 +15,7 @@ packages:
     - nodejs-lts
     - fzf
     - ripgrep
+    - claude-code       # Claude Code CLI; the desktop app does not install it
   brew:
     formulae:
       - uv
@@ -24,11 +25,13 @@ packages:
     casks:
       - beyond-compare
       - karabiner-elements  # rules in private_dot_config/karabiner, enabled by run_onchange_after_enable-karabiner-rules
+      - claude-code         # Claude Code CLI; the desktop app does not install it
   # Not from apt:
   # - Beyond Compare: Scooter Software's .deb, https://www.scootersoftware.com/download
   # - uv: not packaged; https://docs.astral.sh/uv/getting-started/installation/
   # - node: distro versions lag far behind; use nvm or NodeSource
   # - Notepad++: Windows only
+  # - claude-code: not packaged; https://claude.ai/install.sh or npm i -g @anthropic-ai/claude-code
   apt:
     - fzf
     - ripgrep
