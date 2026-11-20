@@ -15,6 +15,7 @@ packages:
     - nodejs-lts
     - fzf
     - ripgrep
+    - claude-code       # Claude Code CLI; community package, not Anthropic's (Claude Desktop doesn't install the CLI)
   brew:
     formulae:
       - uv
@@ -24,11 +25,13 @@ packages:
     casks:
       - beyond-compare
       - karabiner-elements  # rules in private_dot_config/karabiner, enabled by run_onchange_after_enable-karabiner-rules
+      - claude-code         # Claude Code CLI (Claude Desktop doesn't install it); updates with brew upgrade
   # Not from apt:
   # - Beyond Compare: Scooter Software's .deb, https://www.scootersoftware.com/download
   # - uv: not packaged; https://docs.astral.sh/uv/getting-started/installation/
   # - node: distro versions lag far behind; use nvm or NodeSource
   # - Notepad++: Windows only
+  # - Claude Code: Anthropic's installer, https://code.claude.com/docs/en/setup
   apt:
     - fzf
     - ripgrep

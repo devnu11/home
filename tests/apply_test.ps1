@@ -62,7 +62,7 @@ $ProfileShells = [ordered]@{
 }
 
 # What install-packages must pass to choco (from .chezmoidata/packages.yaml).
-$ChocoPackages = 'beyondcompare', 'unxutils', 'notepadplusplus', 'uv', 'nodejs-lts', 'fzf', 'ripgrep'
+$ChocoPackages = 'beyondcompare', 'unxutils', 'notepadplusplus', 'uv', 'nodejs-lts', 'fzf', 'ripgrep', 'claude-code'
 
 $GitValues = [ordered]@{
     'user.email'    = 'ci@example.com'
